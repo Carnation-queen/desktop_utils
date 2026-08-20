@@ -17,7 +17,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * 开机自启动管理，支持 Windows / macOS / Linux。
  * <ul>
- *   <li>Windows：写入当前用户注册表 Run 项（通过 .reg 文件导入，避免命令行引号转义问题）。</li>
+ *   <li>Windows：写入当前用户注册表 Run 项（通过 .reg 文件导入，避免命令行引号转义问题）；
+ *       普通运行时用 javaw -jar，jpackage 安装版用原生启动器 exe。</li>
  *   <li>macOS：写入 ~/Library/LaunchAgents 下的 LaunchAgent plist。</li>
  *   <li>Linux：写入 ~/.config/autostart 下的 .desktop 文件。</li>
  * </ul>
@@ -264,11 +265,17 @@ public class AutoStartManager {
 
     // ---------- 通用 ----------
 
-    /** 构建启动命令参数：{java 可执行文件, -jar, jar 路径} 或 {java, -cp, 类路径, 主类}。 */
+    /**
+     * 构建启动命令参数：
+     * <ul>
+     *   <li>普通运行（JDK / 可执行 jar）：{java(javaw), -jar, jar 路径} 或 {java, -cp, 类路径, 主类}。</li>
+     *   <li>jpackage 安装版：{安装目录/启动器.exe}（其自带运行时里没有 javaw/java 可执行文件）。</li>
+     * </ul>
+     */
     private String[] buildLaunchCommandParts() {
         try {
-            String javaExe = Paths.get(System.getProperty("java.home"),
-                    "bin", isWindows() ? "javaw.exe" : "java").toString();
+            Path javaExe = Paths.get(System.getProperty("java.home"),
+                    "bin", isWindows() ? "javaw.exe" : "java");
 
             Path location = null;
             if (Main.class.getProtectionDomain().getCodeSource() != null) {
@@ -279,11 +286,58 @@ public class AutoStartManager {
                 return null;
             }
 
-            if (location.toString().toLowerCase(Locale.ROOT).endsWith(".jar")) {
-                return new String[]{javaExe, "-jar", location.toString()};
+            // jpackage 自带的运行时（runtime）里没有 javaw/java 可执行文件，
+            // 若仍用 javaw -jar 注册自启动，开机时会因找不到 javaw.exe 而无法启动，
+            // 此时应改用安装目录下的原生启动器。
+            if (isWindows() && !Files.exists(javaExe)) {
+                Path launcher = findWindowsLauncher(location);
+                if (launcher != null) {
+                    return new String[]{launcher.toString()};
+                }
             }
-            return new String[]{javaExe, "-cp", location.toString(), Main.class.getName()};
+
+            if (location.toString().toLowerCase(Locale.ROOT).endsWith(".jar")) {
+                return new String[]{javaExe.toString(), "-jar", location.toString()};
+            }
+            return new String[]{javaExe.toString(), "-cp", location.toString(), Main.class.getName()};
         } catch (URISyntaxException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 在 jpackage 安装布局中查找原生启动器 exe。
+     * 布局为：安装目录/app/&lt;name&gt;.jar，启动器位于安装目录/&lt;name&gt;.exe。
+     */
+    private Path findWindowsLauncher(Path location) {
+        Path appDir = location.getParent();
+        if (appDir == null) {
+            return null;
+        }
+        Path installDir = appDir.getParent();
+        if (installDir == null) {
+            return null;
+        }
+
+        // 优先使用与 jar 同名的启动器（如 desktop_utils.jar -> desktop_utils.exe）。
+        String jarName = location.getFileName().toString();
+        if (jarName.toLowerCase(Locale.ROOT).endsWith(".jar")) {
+            String baseName = jarName.substring(0, jarName.length() - 4);
+            Path launcher = installDir.resolve(baseName + ".exe");
+            if (Files.isRegularFile(launcher)) {
+                return launcher;
+            }
+        }
+
+        // 兜底：安装目录下的第一个 exe。
+        try (java.util.stream.Stream<Path> files = Files.list(installDir)) {
+            return files
+                    .filter(p -> p.getFileName().toString()
+                            .toLowerCase(Locale.ROOT).endsWith(".exe"))
+                    .filter(Files::isRegularFile)
+                    .findFirst()
+                    .orElse(null);
+        } catch (IOException e) {
             return null;
         }
     }

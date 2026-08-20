@@ -47,8 +47,9 @@ The scheduler checks every second in the background and executes a full shutdown
 
 ## Requirements
 
-- **JDK 17** or newer
+- **JDK 17** or newer (includes `jpackage`)
 - **Maven 3.6+** (for building)
+- **WiX Toolset 3.x** — required only for building the Windows installer with `jpackage` (see [Packaging](#packaging-windows-installer))
 
 ## Build
 
@@ -67,6 +68,73 @@ target/desktop_utils-1.0-SNAPSHOT.jar
 ```bash
 java -jar target/desktop_utils-1.0-SNAPSHOT.jar
 ```
+
+## Packaging (Windows Installer)
+
+The Windows installer is built with **jpackage** (bundled with JDK 17+). On Windows, `jpackage` needs **WiX Toolset 3.x** to generate the `.exe` installer.
+
+### 1. Prepare the application JAR
+
+`jpackage` packages one self-contained executable JAR. This project uses the IntelliJ IDEA artifact `desktop_utils:jar`, which bundles all dependencies into `out/artifacts/desktop_utils_jar/desktop_utils.jar`.
+
+- Open the project in IntelliJ IDEA.
+- Run **Build → Build Artifacts… → desktop_utils:jar → Build**.
+- The output is written to `out/artifacts/desktop_utils_jar/desktop_utils.jar`.
+
+> Alternatively, use the Maven shaded JAR and copy it into place:
+>
+> ```bash
+> mvn clean package
+> copy target\desktop_utils-1.0-SNAPSHOT.jar out\artifacts\desktop_utils_jar\desktop_utils.jar
+> ```
+
+### 2. Configure WiX 3.x (one-time setup)
+
+`jpackage` looks for WiX 3.x in the directory named by the `WIX` environment variable, or falls back to the default path `C:\Program Files (x86)\WiX Toolset v3.11`.
+
+1. Download the WiX 3.11.2 binaries from the [wix3 releases](https://github.com/wixtoolset/wix3/releases) page (`wix311-binaries.zip`).
+2. Extract the archive, for example to `C:\wix311`, so that `C:\wix311\bin\candle.exe` and `C:\wix311\bin\light.exe` exist.
+3. Create a system or user environment variable `WIX` that points to that directory:
+
+   ```powershell
+   setx WIX "C:\wix311"
+   ```
+
+   (Or set it via *System Properties → Environment Variables*. Open a new terminal afterwards so the change takes effect.)
+4. Verify the setup:
+
+   ```powershell
+   Test-Path "$env:WIX\bin\candle.exe"
+   ```
+
+### 3. Run jpackage
+
+Run the command from the project root (so that `LICENSE.txt` resolves):
+
+```powershell
+jpackage --name desktop_utils `
+  --input "out/artifacts/desktop_utils_jar" `
+  --main-jar desktop_utils.jar `
+  --main-class changcun.desktop_utils.Main `
+  --dest "installer" `
+  --license-file "LICENSE.txt" `
+  --win-dir-chooser `
+  --win-shortcut-prompt `
+  --win-menu
+```
+
+Key options:
+
+| Option                 | Purpose                                                            |
+| ---------------------- | ------------------------------------------------------------------ |
+| `--win-dir-chooser`    | Let the user choose the install directory during setup.            |
+| `--win-shortcut-prompt`| Prompt whether to create a desktop shortcut.                       |
+| `--win-menu`           | Add the app to the Windows Start Menu.                             |
+| `--license-file`       | Embed `LICENSE.txt` as the installer license (must be `.txt`).     |
+
+On success, the installer is written to `installer/desktop_utils-1.0.exe`.
+
+> To use the multi-resolution `icon.ico` for the installer/executable, add `--icon icon.ico` (the file is provided in the project root).
 
 ## Configuration & Data Files
 
