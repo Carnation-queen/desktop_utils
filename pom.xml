@@ -29,9 +29,34 @@
             <artifactId>flatlaf</artifactId>
             <version>3.4.1</version>
         </dependency>
+
+        <!-- 用于解析更新接口返回的 JSON（GitHub Releases） -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
     </dependencies>
 
     <build>
+        <resources>
+            <!-- 除 version.properties 外的资源不做过滤，避免破坏二进制资源（如 icon.png）。 -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>version.properties</exclude>
+                </excludes>
+            </resource>
+            <!-- version.properties 使用 Maven 过滤，注入项目版本号。 -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>version.properties</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

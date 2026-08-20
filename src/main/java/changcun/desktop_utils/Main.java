@@ -7,6 +7,7 @@ import changcun.desktop_utils.service.HolidayReminder;
 import changcun.desktop_utils.service.HolidayStore;
 import changcun.desktop_utils.service.SettingsStore;
 import changcun.desktop_utils.service.ShutdownScheduler;
+import changcun.desktop_utils.service.UpdateChecker;
 import changcun.desktop_utils.tray.TrayManager;
 import changcun.desktop_utils.ui.AppIcon;
 import changcun.desktop_utils.ui.MainFrame;
@@ -46,7 +47,9 @@ public class Main {
             ShutdownConfig config = store.load();
             ShutdownScheduler scheduler = new ShutdownScheduler(config, store, holidayStore);
 
-            MainFrame frame = new MainFrame(scheduler, holidayStore, autoStartManager);
+            UpdateChecker updateChecker = new UpdateChecker(appSettingsStore.load().getUpdateUrl());
+            MainFrame frame = new MainFrame(scheduler, holidayStore, autoStartManager,
+                    appSettingsStore, updateChecker);
             HolidayReminder reminder = new HolidayReminder(holidayStore, frame.getHolidayPanel());
 
             // Windows 任务栏应用图标（Alt-Tab 与固定到任务栏时使用）
@@ -74,6 +77,14 @@ public class Main {
             scheduler.start();
             reminder.start();
             frame.setVisible(true);
+
+            // 若用户开启“自动检查更新”，启动后延迟在后台检查一次，发现新版本时弹窗询问。
+            if (appSettingsStore.load().isAutoUpdate()) {
+                javax.swing.Timer startupCheck = new javax.swing.Timer(1500,
+                        e -> frame.getAboutPanel().autoCheck());
+                startupCheck.setRepeats(false);
+                startupCheck.start();
+            }
         });
     }
 }

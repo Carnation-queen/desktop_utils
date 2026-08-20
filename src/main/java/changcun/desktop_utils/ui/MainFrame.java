@@ -1,8 +1,10 @@
 package changcun.desktop_utils.ui;
 
+import changcun.desktop_utils.service.AppSettingsStore;
 import changcun.desktop_utils.service.AutoStartManager;
 import changcun.desktop_utils.service.HolidayStore;
 import changcun.desktop_utils.service.ShutdownScheduler;
+import changcun.desktop_utils.service.UpdateChecker;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -13,16 +15,18 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 
 /**
- * 主窗口：包含“系统信息”、“定时关机”、“节假日”和“设置”四个页面。
+ * 主窗口：包含“系统信息”、“定时关机”、“节假日”、“设置”和“关于”五个页面。
  */
 public class MainFrame extends JFrame {
 
     private final HolidayStore holidayStore;
     private final HolidayPanel holidayPanel;
     private final SettingsPanel settingsPanel;
+    private final AboutPanel aboutPanel;
 
     public MainFrame(ShutdownScheduler scheduler, HolidayStore holidayStore,
-                     AutoStartManager autoStartManager) {
+                     AutoStartManager autoStartManager, AppSettingsStore appSettingsStore,
+                     UpdateChecker updateChecker) {
         super("桌面工具");
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setIconImage(AppIcon.windowIcon());
@@ -32,7 +36,8 @@ public class MainFrame extends JFrame {
 
         this.holidayStore = holidayStore;
         this.holidayPanel = new HolidayPanel(holidayStore);
-        this.settingsPanel = new SettingsPanel(autoStartManager);
+        this.settingsPanel = new SettingsPanel(autoStartManager, appSettingsStore);
+        this.aboutPanel = new AboutPanel(updateChecker);
 
         setContentPane(buildContent(scheduler));
     }
@@ -48,6 +53,7 @@ public class MainFrame extends JFrame {
         tabs.addTab("定时关机", new ShutdownPanel(scheduler, holidayStore));
         tabs.addTab("节假日", holidayPanel);
         tabs.addTab("设置", settingsPanel);
+        tabs.addTab("关于", aboutPanel);
         root.add(tabs, BorderLayout.CENTER);
         return root;
     }
@@ -62,7 +68,7 @@ public class MainFrame extends JFrame {
         text.setLayout(new javax.swing.BoxLayout(text, javax.swing.BoxLayout.Y_AXIS));
 
         JLabel title = UiTheme.title("桌面工具");
-        JLabel subtitle = UiTheme.subtitle("系统信息 · 定时关机 · 节假日 · 设置");
+        JLabel subtitle = UiTheme.subtitle("系统信息 · 定时关机 · 节假日 · 设置 · 关于");
         subtitle.setBorder(new EmptyBorder(4, 0, 0, 0));
 
         text.add(title);
@@ -73,5 +79,9 @@ public class MainFrame extends JFrame {
 
     public HolidayPanel getHolidayPanel() {
         return holidayPanel;
+    }
+
+    public AboutPanel getAboutPanel() {
+        return aboutPanel;
     }
 }

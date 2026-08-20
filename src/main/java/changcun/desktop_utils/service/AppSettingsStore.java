@@ -20,6 +20,8 @@ public class AppSettingsStore {
     private static final String CONFIG_FILE = "app.properties";
 
     private static final String KEY_AUTO_START = "app.autoStart";
+    private static final String KEY_AUTO_UPDATE = "app.autoUpdate";
+    private static final String KEY_UPDATE_URL = "app.updateUrl";
 
     private final Path configFile;
 
@@ -49,12 +51,16 @@ public class AppSettingsStore {
         }
 
         settings.setAutoStart(Boolean.parseBoolean(props.getProperty(KEY_AUTO_START, "false")));
+        settings.setAutoUpdate(Boolean.parseBoolean(props.getProperty(KEY_AUTO_UPDATE, "true")));
+        settings.setUpdateUrl(props.getProperty(KEY_UPDATE_URL, AppSettings.DEFAULT_UPDATE_URL));
         return settings;
     }
 
     public void save(AppSettings settings) {
         Properties props = new Properties();
         props.setProperty(KEY_AUTO_START, String.valueOf(settings.isAutoStart()));
+        props.setProperty(KEY_AUTO_UPDATE, String.valueOf(settings.isAutoUpdate()));
+        props.setProperty(KEY_UPDATE_URL, settings.getUpdateUrl());
 
         try {
             Files.createDirectories(configFile.getParent());
