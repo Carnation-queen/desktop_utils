@@ -74,16 +74,21 @@ class UpdateCheckerTest {
 
     @Test
     void checkForUpdateReportsNewerVersion() {
-        responseBody = releaseJson("v1.0.2",
-                "https://github.com/Carnation-queen/desktop_utils/releases/download/v1.0.2/desktop_utils.exe");
+        // 用“当前版本 + .1”构造一个必然更新的版本，避免与项目版本号耦合。
+        String current = AppVersion.current();
+        String newer = current + ".1";
+        responseBody = releaseJson("v" + newer,
+                "https://github.com/Carnation-queen/desktop_utils/releases/download/v"
+                        + newer + "/desktop_utils.exe");
 
         UpdateCheckResult result = new UpdateChecker(url()).checkForUpdate();
 
         assertEquals(UpdateCheckResult.Status.UPDATE_AVAILABLE, result.getStatus());
         assertNotNull(result.getLatest());
-        assertEquals("1.0.2", result.getLatest().getVersion());
+        assertEquals(newer, result.getLatest().getVersion());
         assertEquals(
-                "https://github.com/Carnation-queen/desktop_utils/releases/download/v1.0.2/desktop_utils.exe",
+                "https://github.com/Carnation-queen/desktop_utils/releases/download/v"
+                        + newer + "/desktop_utils.exe",
                 result.getLatest().getDownloadUrl());
         assertNotNull(result.getCurrentVersion());
     }

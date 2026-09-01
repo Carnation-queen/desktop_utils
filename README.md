@@ -85,18 +85,15 @@ The Windows installer is built with **jpackage** (bundled with JDK 17+). On Wind
 
 ### 1. Prepare the application JAR
 
-`jpackage` packages one self-contained executable JAR. This project uses the IntelliJ IDEA artifact `desktop_utils:jar`, which bundles all dependencies into `out/artifacts/desktop_utils_jar/desktop_utils.jar`.
+`jpackage` packages one self-contained executable JAR. Build the Maven shaded JAR, which bundles **all** runtime dependencies (FlatLaf, Apache POI, Gson, …) into a single file:
 
-- Open the project in IntelliJ IDEA.
-- Run **Build → Build Artifacts… → desktop_utils:jar → Build**.
-- The output is written to `out/artifacts/desktop_utils_jar/desktop_utils.jar`.
+```bash
+mvn clean package
+```
 
-> Alternatively, use the Maven shaded JAR and copy it into place:
->
-> ```bash
-> mvn clean package
-> copy target\desktop_utils-1.0-SNAPSHOT.jar out\artifacts\desktop_utils_jar\desktop_utils.jar
-> ```
+The output is written to `target/desktop_utils-<version>.jar` (e.g. `target/desktop_utils-1.0.2.jar`).
+
+> ⚠️ Do **not** feed jpackage the IntelliJ artifact JAR (`out/artifacts/desktop_utils_jar/desktop_utils.jar`): it is a thin JAR whose dependencies are missing or incomplete. Packaging from it produced a build that crashed on “检查更新” with `NoClassDefFoundError: com/google/gson/JsonParser` because Gson was absent from the runtime classpath.
 
 ### 2. Configure WiX 3.x (one-time setup)
 
@@ -123,11 +120,12 @@ Run the command from the project root (so that `LICENSE.txt` resolves):
 
 ```powershell
 jpackage --name desktop_utils `
-  --input "out/artifacts/desktop_utils_jar" `
-  --main-jar desktop_utils.jar `
+  --input "target" `
+  --main-jar desktop_utils-1.0.2.jar `
   --main-class changcun.desktop_utils.Main `
   --dest "installer" `
   --license-file "LICENSE.txt" `
+  --icon "icon.ico" `
   --win-dir-chooser `
   --win-shortcut-prompt `
   --win-menu
