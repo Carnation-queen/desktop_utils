@@ -1,12 +1,13 @@
 # Desktop Utils
 
-A lightweight cross-platform Swing desktop utility that runs quietly in the system tray and provides five core features:
+A lightweight cross-platform Swing desktop utility that runs quietly in the system tray and provides six core features:
 
 - **System Info** — displays basic information about the current runtime environment.
 - **Scheduled Shutdown** — shuts the computer down automatically on a one-time, daily, or workday-only schedule.
 - **Holiday Management** — imports annual holiday data from Excel and uses it to skip shutdowns on holidays.
 - **Settings** — toggles auto-start on login and update preferences.
 - **Software Update** — checks for new releases and downloads the update.
+- **Novel Reader** — an offline TXT novel library with progress-saving paginated reading.
 
 > The UI language is Chinese.
 
@@ -54,6 +55,17 @@ The scheduler checks every second in the background and executes a full shutdown
 - **Auto-check on startup** is enabled by default and can be toggled in Settings.
 
 To ship updates, publish a GitHub Release with a tag such as `v1.0.2` and attach the installer (e.g. `desktop_utils-1.0.2.exe`) as a release asset. The app compares the tag version against the version baked into the build (`version.properties`, sourced from `pom.xml`).
+
+### 6. Novel Reader（小说阅读器）
+
+- Press **Ctrl+Alt+Shift+F12** anywhere inside the main window to open a standalone **Novel Reader** window (independent of the main frame).
+- **Library (书库)**: import one or more `.txt` files, view the book list with reading progress and last-read time; supports **open / rename / delete**, and double-click a book to start (or resume) reading.
+- **Reading**: paginated text display with previous/next page buttons, plus keyboard support (`Space` / `PageDown` / `→` next, `PageUp` / `←` previous, mouse wheel flips pages). Font size can be adjusted with `A−` / `A＋`.
+- **Chapter navigation**: common chapter headings (第X章/节/回…、楔子、序章、番外、后记…) are auto-detected into a clickable **目录** (table of contents); a progress slider and a chapter indicator are shown in the footer.
+- **Progress memory**: the reading position (character offset) is saved automatically on every page turn and when the window closes; reopening the same book resumes at exactly the same spot.
+- Text files are copied into `~/.desktop_utils/novels/books/` and decoded adaptively (UTF-8, UTF-16 or GB18030/GBK), so the library stays self-contained after import.
+
+> Tip: pressing Ctrl+Alt+Shift+F12 again while the Novel Reader is focused hides it (progress is saved); calling it from the main window brings it back to the last view.
 
 ## Requirements
 

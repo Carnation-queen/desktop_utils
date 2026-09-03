@@ -5,6 +5,7 @@ import changcun.desktop_utils.service.AppSettingsStore;
 import changcun.desktop_utils.service.AutoStartManager;
 import changcun.desktop_utils.service.HolidayReminder;
 import changcun.desktop_utils.service.HolidayStore;
+import changcun.desktop_utils.service.NovelStore;
 import changcun.desktop_utils.service.SettingsStore;
 import changcun.desktop_utils.service.ShutdownScheduler;
 import changcun.desktop_utils.service.UpdateChecker;
@@ -48,8 +49,9 @@ public class Main {
             ShutdownScheduler scheduler = new ShutdownScheduler(config, store, holidayStore);
 
             UpdateChecker updateChecker = new UpdateChecker(appSettingsStore.load().getUpdateUrl());
+            NovelStore novelStore = new NovelStore();
             MainFrame frame = new MainFrame(scheduler, holidayStore, autoStartManager,
-                    appSettingsStore, updateChecker);
+                    appSettingsStore, updateChecker, novelStore);
             HolidayReminder reminder = new HolidayReminder(holidayStore, frame.getHolidayPanel());
 
             // Windows 任务栏应用图标（Alt-Tab 与固定到任务栏时使用）

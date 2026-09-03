@@ -3,16 +3,22 @@ package changcun.desktop_utils.ui;
 import changcun.desktop_utils.service.AppSettingsStore;
 import changcun.desktop_utils.service.AutoStartManager;
 import changcun.desktop_utils.service.HolidayStore;
+import changcun.desktop_utils.service.NovelStore;
 import changcun.desktop_utils.service.ShutdownScheduler;
 import changcun.desktop_utils.service.UpdateChecker;
+import changcun.desktop_utils.ui.novel.NovelReaderFrame;
 
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.KeyStroke;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 
 /**
  * 主窗口：包含“系统信息”、“定时关机”、“节假日”、“设置”和“关于”五个页面。
@@ -23,10 +29,12 @@ public class MainFrame extends JFrame {
     private final HolidayPanel holidayPanel;
     private final SettingsPanel settingsPanel;
     private final AboutPanel aboutPanel;
+    private final NovelStore novelStore;
+    private NovelReaderFrame novelReader;
 
     public MainFrame(ShutdownScheduler scheduler, HolidayStore holidayStore,
                      AutoStartManager autoStartManager, AppSettingsStore appSettingsStore,
-                     UpdateChecker updateChecker) {
+                     UpdateChecker updateChecker, NovelStore novelStore) {
         super("桌面工具");
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setIconImage(AppIcon.windowIcon());
@@ -38,8 +46,26 @@ public class MainFrame extends JFrame {
         this.holidayPanel = new HolidayPanel(holidayStore);
         this.settingsPanel = new SettingsPanel(autoStartManager, appSettingsStore);
         this.aboutPanel = new AboutPanel(updateChecker);
+        this.novelStore = novelStore;
 
         setContentPane(buildContent(scheduler));
+        installNovelReaderShortcut();
+    }
+
+    /** 在主窗口内任意位置按下 Ctrl+Alt+Shift+F12 时唤起独立的小说阅读器窗口。 */
+    private void installNovelReaderShortcut() {
+        KeyStroke key = KeyStroke.getKeyStroke(KeyEvent.VK_F12,
+                InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK);
+        getRootPane().registerKeyboardAction(e -> openNovelReader(), key,
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
+    }
+
+    /** 打开（或唤起）小说阅读器窗口。 */
+    public void openNovelReader() {
+        if (novelReader == null) {
+            novelReader = new NovelReaderFrame(novelStore);
+        }
+        novelReader.open();
     }
 
     private JPanel buildContent(ShutdownScheduler scheduler) {
@@ -68,7 +94,7 @@ public class MainFrame extends JFrame {
         text.setLayout(new javax.swing.BoxLayout(text, javax.swing.BoxLayout.Y_AXIS));
 
         JLabel title = UiTheme.title("桌面工具");
-        JLabel subtitle = UiTheme.subtitle("系统信息 · 定时关机 · 节假日 · 设置 · 关于");
+        JLabel subtitle = UiTheme.subtitle("系统信息 · 定时关机 · 节假日 · 设置 · 关于 · 小说阅读器(Ctrl+Alt+Shift+F12)");
         subtitle.setBorder(new EmptyBorder(4, 0, 0, 0));
 
         text.add(title);
