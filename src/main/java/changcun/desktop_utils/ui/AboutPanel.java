@@ -1,5 +1,6 @@
 package changcun.desktop_utils.ui;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.model.UpdateCheckResult;
 import changcun.desktop_utils.model.UpdateInfo;
 import changcun.desktop_utils.service.AppVersion;
@@ -42,8 +43,8 @@ public class AboutPanel extends JPanel {
     private final JLabel statusLabel = new JLabel();
     private final JTextArea notesArea = new JTextArea();
     private final JScrollPane notesScroll = new JScrollPane(notesArea);
-    private final JButton checkButton = UiTheme.secondaryButton("检查更新");
-    private final JButton downloadButton = UiTheme.primaryButton("下载更新");
+    private final JButton checkButton = UiTheme.secondaryButton(Messages.tr("about.check"));
+    private final JButton downloadButton = UiTheme.primaryButton(Messages.tr("about.download"));
     private final JProgressBar progressBar = new JProgressBar(0, 100);
 
     private UpdateInfo latestUpdate;
@@ -72,9 +73,9 @@ public class AboutPanel extends JPanel {
         progressBar.setVisible(false);
         progressBar.setStringPainted(true);
 
-        versionLabel.setText("当前版本 v" + AppVersion.current());
-        notesArea.setText("暂无更新信息");
-        statusLabel.setText("点击“检查更新”查看是否有新版本");
+        versionLabel.setText(Messages.tr("about.version", AppVersion.current()));
+        notesArea.setText(Messages.tr("about.notes.empty"));
+        statusLabel.setText(Messages.tr("about.status.idle"));
     }
 
     /** 启动时在后台静默检查一次；发现新版本时弹窗询问是否下载。 */
@@ -86,8 +87,8 @@ public class AboutPanel extends JPanel {
         JPanel header = new JPanel();
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        header.add(UiTheme.title("关于"));
-        JLabel subtitle = UiTheme.subtitle("版本信息与软件更新");
+        header.add(UiTheme.title(Messages.tr("about.title")));
+        JLabel subtitle = UiTheme.subtitle(Messages.tr("about.subtitle"));
         subtitle.setBorder(new EmptyBorder(4, 0, 0, 0));
         header.add(subtitle);
         return header;
@@ -97,7 +98,7 @@ public class AboutPanel extends JPanel {
         JPanel card = UiTheme.card();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
 
-        JLabel appName = UiTheme.sectionTitle("桌面工具 Desktop Utils");
+        JLabel appName = UiTheme.sectionTitle(Messages.tr("about.appName"));
         card.add(appName);
 
         versionLabel.setForeground(UiTheme.ACCENT);
@@ -105,7 +106,7 @@ public class AboutPanel extends JPanel {
         versionLabel.setBorder(new EmptyBorder(8, 0, 0, 0));
         card.add(versionLabel);
 
-        JLabel desc = UiTheme.subtitle("系统信息 · 定时关机 · 节假日管理 · 设置");
+        JLabel desc = UiTheme.subtitle(Messages.tr("about.desc"));
         desc.setBorder(new EmptyBorder(8, 0, 0, 0));
         card.add(desc);
         return card;
@@ -114,7 +115,7 @@ public class AboutPanel extends JPanel {
     private JPanel buildUpdateCard() {
         JPanel card = UiTheme.card();
         card.setLayout(new BorderLayout(0, 12));
-        card.add(UiTheme.sectionTitle("检查更新"), BorderLayout.NORTH);
+        card.add(UiTheme.sectionTitle(Messages.tr("about.checkSection")), BorderLayout.NORTH);
 
         JPanel body = new JPanel();
         body.setOpaque(false);
@@ -160,7 +161,7 @@ public class AboutPanel extends JPanel {
         checkButton.setEnabled(false);
         downloadButton.setEnabled(false);
         statusLabel.setForeground(UiTheme.TEXT_SECONDARY);
-        statusLabel.setText("正在检查更新…");
+        statusLabel.setText(Messages.tr("about.checking"));
 
         SwingWorker<UpdateCheckResult, Void> worker = new SwingWorker<>() {
             @Override
@@ -175,7 +176,7 @@ public class AboutPanel extends JPanel {
                 try {
                     handleResult(get(), silent);
                 } catch (Exception e) {
-                    showError("检查更新失败：" + e.getMessage(), silent);
+                    showError(Messages.tr("about.check.failed", e.getMessage()), silent);
                 }
             }
         };
@@ -186,28 +187,29 @@ public class AboutPanel extends JPanel {
         switch (result.getStatus()) {
             case UP_TO_DATE:
                 statusLabel.setForeground(SUCCESS_GREEN);
-                statusLabel.setText("已是最新版本（v" + result.getCurrentVersion() + "）");
+                statusLabel.setText(Messages.tr("about.upToDate", result.getCurrentVersion()));
                 latestUpdate = null;
                 downloadButton.setEnabled(false);
-                notesArea.setText("暂无更新信息");
+                notesArea.setText(Messages.tr("about.notes.empty"));
                 if (!silent) {
                     JOptionPane.showMessageDialog(this,
-                            "当前已是最新版本（v" + result.getCurrentVersion() + "）。",
-                            "检查更新", JOptionPane.INFORMATION_MESSAGE);
+                            Messages.tr("about.upToDate.msg", result.getCurrentVersion()),
+                            Messages.tr("about.check.title"), JOptionPane.INFORMATION_MESSAGE);
                 }
                 break;
             case UPDATE_AVAILABLE:
                 latestUpdate = result.getLatest();
                 statusLabel.setForeground(UiTheme.ACCENT);
-                statusLabel.setText("发现新版本 v" + latestUpdate.getVersion()
-                        + "（当前 v" + result.getCurrentVersion() + "）");
+                statusLabel.setText(Messages.tr("about.newVersion",
+                        latestUpdate.getVersion(), result.getCurrentVersion()));
                 notesArea.setText(describeNotes(latestUpdate.getNotes()));
                 downloadButton.setEnabled(true);
                 if (silent) {
                     int choice = JOptionPane.showConfirmDialog(this,
-                            "发现新版本 v" + latestUpdate.getVersion()
-                                    + "，当前为 v" + result.getCurrentVersion() + "。\n是否立即下载更新？",
-                            "发现新版本", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+                            Messages.tr("about.newVersion.msg",
+                                    latestUpdate.getVersion(), result.getCurrentVersion()),
+                            Messages.tr("about.newVersion.title"),
+                            JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
                     if (choice == JOptionPane.YES_OPTION) {
                         startDownload();
                     }
@@ -215,7 +217,7 @@ public class AboutPanel extends JPanel {
                 break;
             case ERROR:
             default:
-                showError("检查失败：" + result.getErrorMessage(), silent);
+                showError(Messages.tr("about.check.error", result.getErrorMessage()), silent);
                 break;
         }
     }
@@ -226,7 +228,8 @@ public class AboutPanel extends JPanel {
         latestUpdate = null;
         downloadButton.setEnabled(false);
         if (!silent) {
-            JOptionPane.showMessageDialog(this, message, "检查更新", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, message,
+                    Messages.tr("about.check.title"), JOptionPane.WARNING_MESSAGE);
         }
     }
 
@@ -245,7 +248,7 @@ public class AboutPanel extends JPanel {
         progressBar.setValue(0);
         progressBar.setVisible(true);
         statusLabel.setForeground(UiTheme.TEXT_SECONDARY);
-        statusLabel.setText("正在下载 v" + latestUpdate.getVersion() + "…");
+        statusLabel.setText(Messages.tr("about.downloading", latestUpdate.getVersion()));
 
         SwingWorker<Path, Void> worker = new SwingWorker<>() {
             @Override
@@ -264,13 +267,14 @@ public class AboutPanel extends JPanel {
                     Path path = get();
                     progressBar.setValue(100);
                     statusLabel.setForeground(SUCCESS_GREEN);
-                    statusLabel.setText("下载完成：v" + latestUpdate.getVersion());
+                    statusLabel.setText(Messages.tr("about.download.done", latestUpdate.getVersion()));
                     promptOpen(path);
                 } catch (Exception e) {
                     statusLabel.setForeground(ERROR_RED);
-                    statusLabel.setText("下载失败：" + messageOf(e));
+                    statusLabel.setText(Messages.tr("about.download.failedLabel", messageOf(e)));
                     JOptionPane.showMessageDialog(AboutPanel.this,
-                            "下载更新失败：\n" + messageOf(e), "下载失败", JOptionPane.ERROR_MESSAGE);
+                            Messages.tr("about.download.failedMsg", messageOf(e)),
+                            Messages.tr("about.download.failedTitle"), JOptionPane.ERROR_MESSAGE);
                 }
             }
         };
@@ -287,8 +291,9 @@ public class AboutPanel extends JPanel {
 
     private void promptOpen(Path path) {
         int choice = JOptionPane.showConfirmDialog(this,
-                "更新已下载到：\n" + path + "\n\n是否立即打开（安装）？",
-                "下载完成", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+                Messages.tr("about.download.donePrompt", path),
+                Messages.tr("about.download.doneTitle"),
+                JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
         if (choice == JOptionPane.YES_OPTION) {
             open(path);
         }
@@ -315,8 +320,8 @@ public class AboutPanel extends JPanel {
     private void openInBrowser(String url) {
         if (url == null || url.isBlank()) {
             JOptionPane.showMessageDialog(this,
-                    "该版本未提供下载文件，请到发布页面手动下载。",
-                    "提示", JOptionPane.INFORMATION_MESSAGE);
+                    Messages.tr("about.noDownloadUrl"),
+                    Messages.tr("common.hint"), JOptionPane.INFORMATION_MESSAGE);
             return;
         }
         try {
@@ -328,8 +333,8 @@ public class AboutPanel extends JPanel {
             // 回退到弹窗提示地址
         }
         JOptionPane.showMessageDialog(this,
-                "请访问发布页面下载更新：\n" + url,
-                "打开下载页面", JOptionPane.INFORMATION_MESSAGE);
+                Messages.tr("about.openPageMsg", url),
+                Messages.tr("about.openPageTitle"), JOptionPane.INFORMATION_MESSAGE);
     }
 
     private static Path downloadDir() {
@@ -342,7 +347,7 @@ public class AboutPanel extends JPanel {
 
     private static String describeNotes(String notes) {
         if (notes == null || notes.isBlank()) {
-            return "暂无更新说明";
+            return Messages.tr("about.notes.none");
         }
         return notes.trim();
     }

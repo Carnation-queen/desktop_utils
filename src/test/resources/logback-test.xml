@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  单元测试专用日志配置：静默一切日志输出，避免测试把审计日志写进真实用户目录
+  （logback 优先加载 classpath 中的 logback-test.xml，运行时则用主资源的 logback.xml）。
+-->
+<configuration>
+    <root level="OFF"/>
+</configuration>

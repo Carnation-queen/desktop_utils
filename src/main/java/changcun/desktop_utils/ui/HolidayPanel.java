@@ -1,5 +1,6 @@
 package changcun.desktop_utils.ui;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.model.HolidayData;
 import changcun.desktop_utils.service.HolidayStore;
 
@@ -22,7 +23,6 @@ import java.awt.Font;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.TextStyle;
-import java.util.Locale;
 
 /**
  * 第三个页面：展示已导入的节假日信息，并提供 Excel 导入入口。
@@ -43,7 +43,10 @@ public class HolidayPanel extends JPanel {
         add(buildHeader(), BorderLayout.NORTH);
 
         // 中部：表格展示
-        tableModel = new DefaultTableModel(new Object[]{"序号", "日期", "星期"}, 0) {
+        tableModel = new DefaultTableModel(new Object[]{
+                Messages.tr("holiday.col.index"),
+                Messages.tr("holiday.col.date"),
+                Messages.tr("holiday.col.weekday")}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -82,15 +85,15 @@ public class HolidayPanel extends JPanel {
         JPanel text = new JPanel();
         text.setOpaque(false);
         text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
-        text.add(UiTheme.title("节假日管理"));
-        JLabel subtitle = UiTheme.subtitle("导入年度节假日 Excel 表格，用于非节假日关机判断");
+        text.add(UiTheme.title(Messages.tr("holiday.title")));
+        JLabel subtitle = UiTheme.subtitle(Messages.tr("holiday.subtitle"));
         subtitle.setBorder(new EmptyBorder(4, 0, 0, 0));
         text.add(subtitle);
         header.add(text, BorderLayout.WEST);
 
-        JButton importButton = UiTheme.primaryButton("导入 Excel");
+        JButton importButton = UiTheme.primaryButton(Messages.tr("holiday.import"));
         importButton.addActionListener(e -> importFromExcel());
-        JButton refreshButton = UiTheme.secondaryButton("刷新");
+        JButton refreshButton = UiTheme.secondaryButton(Messages.tr("common.refresh"));
         refreshButton.addActionListener(e -> refresh());
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
@@ -108,26 +111,27 @@ public class HolidayPanel extends JPanel {
         tableModel.setRowCount(0);
         int index = 1;
         for (LocalDate date : data.getDates()) {
-            String week = date.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.CHINA);
+            String week = date.getDayOfWeek().getDisplayName(TextStyle.FULL, Messages.locale());
             tableModel.addRow(new Object[]{index++, date.toString(), week});
         }
 
         int currentYear = LocalDate.now().getYear();
         if (data.size() == 0) {
-            infoLabel.setText("尚未导入节假日信息。");
+            infoLabel.setText(Messages.tr("holiday.status.empty"));
         } else if (data.getYear() != currentYear) {
-            infoLabel.setText(String.format("已加载 %d 年的 %d 个节假日（当前是 %d 年，请重新导入）。",
+            infoLabel.setText(Messages.tr("holiday.status.yearMismatch",
                     data.getYear(), data.size(), currentYear));
         } else {
-            infoLabel.setText(String.format("已加载 %d 年的 %d 个节假日。", data.getYear(), data.size()));
+            infoLabel.setText(Messages.tr("holiday.status.loaded", data.getYear(), data.size()));
         }
     }
 
     /** 弹出文件选择框并从 Excel 导入节假日。 */
     public void importFromExcel() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("选择节假日 Excel 文件");
-        chooser.setFileFilter(new FileNameExtensionFilter("Excel 文件 (*.xlsx, *.xls)", "xlsx", "xls"));
+        chooser.setDialogTitle(Messages.tr("holiday.filechooser.title"));
+        chooser.setFileFilter(new FileNameExtensionFilter(
+                Messages.tr("holiday.filechooser.filter"), "xlsx", "xls"));
         if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
         }
@@ -137,13 +141,13 @@ public class HolidayPanel extends JPanel {
             store.save(data);
             refresh();
             JOptionPane.showMessageDialog(this,
-                    String.format("成功导入 %d 年的 %d 个节假日。", data.getYear(), data.size()),
-                    "导入成功",
+                    Messages.tr("holiday.import.success", data.getYear(), data.size()),
+                    Messages.tr("holiday.import.successTitle"),
                     JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     ex.getMessage(),
-                    "导入失败",
+                    Messages.tr("holiday.import.failTitle"),
                     JOptionPane.ERROR_MESSAGE);
         }
     }

@@ -1,5 +1,7 @@
 package changcun.desktop_utils.ui.novel;
 
+import changcun.desktop_utils.i18n.Messages;
+
 import javax.swing.JComponent;
 import java.awt.Color;
 import java.awt.Font;
@@ -203,7 +205,7 @@ public class PageableTextPanel extends JComponent {
                 g2.setColor(PAPER_TEXT);
                 g2.setFont(getFont());
                 FontMetrics fm = g2.getFontMetrics();
-                String hint = "暂无内容";
+                String hint = Messages.tr("novel.emptyContent");
                 int x = (getWidth() - fm.stringWidth(hint)) / 2;
                 int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
                 g2.drawString(hint, x, y);

@@ -1,5 +1,6 @@
 package changcun.desktop_utils;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.model.ShutdownConfig;
 import changcun.desktop_utils.service.AppSettingsStore;
 import changcun.desktop_utils.service.AppVersion;
@@ -45,6 +46,8 @@ public class Main {
 
             SettingsStore store = new SettingsStore();
             AppSettingsStore appSettingsStore = new AppSettingsStore();
+            // 先按持久化语言初始化国际化，后续所有界面文案都据此生成。
+            Messages.init(appSettingsStore.load().getLanguage());
             AutoStartManager autoStartManager = new AutoStartManager(appSettingsStore);
             // 若已开启自启动，则刷新注册表命令，使其指向当前程序位置。
             autoStartManager.syncOnStartup();
@@ -58,6 +61,8 @@ public class Main {
             MainFrame frame = new MainFrame(scheduler, holidayStore, autoStartManager,
                     appSettingsStore, updateChecker, novelStore);
             HolidayReminder reminder = new HolidayReminder(holidayStore, frame.getHolidayPanel());
+            // 语言即时切换会整体重建界面，让节假日提醒改指向新的“节假日”页面实例。
+            frame.setOnUiRebuilt(() -> reminder.rebind(frame.getHolidayPanel()));
 
             // Windows 任务栏应用图标（Alt-Tab 与固定到任务栏时使用）
             try {

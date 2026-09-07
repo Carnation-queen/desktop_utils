@@ -1,5 +1,6 @@
 package changcun.desktop_utils.tray;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.service.ShutdownAudit;
 import changcun.desktop_utils.service.ShutdownScheduler;
 import changcun.desktop_utils.ui.AppIcon;
@@ -39,8 +40,10 @@ public class TrayManager {
         }
 
         int traySize = SystemTray.getSystemTray().getTrayIconSize().height;
-        trayIcon = new TrayIcon(AppIcon.trayIcon(traySize), "桌面工具");
+        trayIcon = new TrayIcon(AppIcon.trayIcon(traySize), Messages.tr("app.name"));
         trayIcon.setImageAutoSize(true);
+        // 语言切换时同步托盘悬停提示文本。
+        Messages.addListener(this::refreshTooltip);
         // 双击托盘图标打开主界面
         trayIcon.addActionListener(e -> showMainWindow());
 
@@ -68,12 +71,18 @@ public class TrayManager {
         }
     }
 
+    private void refreshTooltip() {
+        if (trayIcon != null) {
+            trayIcon.setToolTip(Messages.tr("app.name"));
+        }
+    }
+
     private void showPopup(MouseEvent e) {
         JPopupMenu menu = new JPopupMenu();
-        JMenuItem openItem = new JMenuItem("显示主界面");
+        JMenuItem openItem = new JMenuItem(Messages.tr("tray.show"));
         openItem.addActionListener(ev -> showMainWindow());
 
-        JMenuItem exitItem = new JMenuItem("退出程序");
+        JMenuItem exitItem = new JMenuItem(Messages.tr("tray.exit"));
         exitItem.addActionListener(ev -> exitApplication());
 
         menu.add(openItem);
@@ -101,8 +110,8 @@ public class TrayManager {
     public void showMinimizeHint() {
         if (trayIcon != null && !hintShown) {
             hintShown = true;
-            trayIcon.displayMessage("程序已最小化到托盘",
-                    "程序仍在后台运行，右键托盘图标可完全退出。",
+            trayIcon.displayMessage(Messages.tr("tray.minimizedTitle"),
+                    Messages.tr("tray.minimizedBody"),
                     TrayIcon.MessageType.INFO);
         }
     }

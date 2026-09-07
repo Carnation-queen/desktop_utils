@@ -1,5 +1,6 @@
 package changcun.desktop_utils.ui.novel;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.model.NovelBook;
 import changcun.desktop_utils.service.NovelStore;
 import changcun.desktop_utils.ui.AppIcon;
@@ -39,7 +40,7 @@ public class NovelReaderFrame extends JFrame {
     private String lastCard = "library";
 
     public NovelReaderFrame(NovelStore store) {
-        super("小说阅读器");
+        super(Messages.tr("novel.readerTitle"));
         this.store = store;
         setIconImage(AppIcon.windowIcon());
         setSize(1020, 760);
@@ -101,6 +102,11 @@ public class NovelReaderFrame extends JFrame {
         lastCard = "library";
         cards.show(deck, "library");
         libraryPanel.refresh();
+    }
+
+    /** 若正处于阅读视图则立即保存进度（供窗口被关闭/语言切换前调用）。 */
+    public void saveProgress() {
+        saveIfReading();
     }
 
     private void saveIfReading() {

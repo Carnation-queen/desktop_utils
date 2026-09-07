@@ -1,5 +1,6 @@
 package changcun.desktop_utils.service;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.model.AppSettings;
 import changcun.desktop_utils.model.UpdateCheckResult;
 import changcun.desktop_utils.model.UpdateInfo;
@@ -48,7 +49,7 @@ public class UpdateChecker {
             String json = fetchJson();
             UpdateInfo latest = parseRelease(json);
             if (latest == null) {
-                return UpdateCheckResult.error("无法解析更新接口返回的内容");
+                return UpdateCheckResult.error(Messages.tr("update.parseFail"));
             }
             String current = AppVersion.current();
             if (AppVersion.compare(latest.getVersion(), current) > 0) {
@@ -58,9 +59,9 @@ public class UpdateChecker {
         } catch (IOException e) {
             String message = e.getMessage();
             return UpdateCheckResult.error(message == null || message.isBlank()
-                    ? "网络连接失败，请检查网络或更新源地址" : message);
+                    ? Messages.tr("update.networkFail") : message);
         } catch (RuntimeException e) {
-            return UpdateCheckResult.error("检查更新失败：" + e.getMessage());
+            return UpdateCheckResult.error(Messages.tr("update.checkFailed", e.getMessage()));
         }
     }
 
@@ -74,7 +75,7 @@ public class UpdateChecker {
     public Path download(UpdateInfo info, Path targetDir, DoubleConsumer progress) throws IOException {
         String url = info.getDownloadUrl();
         if (url == null || url.isBlank()) {
-            throw new IOException("该版本没有提供可直接下载的文件");
+            throw new IOException(Messages.tr("update.noDownload"));
         }
 
         Files.createDirectories(targetDir);
@@ -90,7 +91,7 @@ public class UpdateChecker {
         int code = conn.getResponseCode();
         if (code < 200 || code >= 300) {
             conn.disconnect();
-            throw new IOException("下载失败：HTTP " + code);
+            throw new IOException(Messages.tr("update.httpError", code));
         }
 
         long total = conn.getContentLengthLong();
@@ -124,11 +125,11 @@ public class UpdateChecker {
         int code = conn.getResponseCode();
         try {
             if (code == HttpURLConnection.HTTP_NOT_FOUND) {
-                throw new IOException("尚未发布任何版本（HTTP 404）");
+                throw new IOException(Messages.tr("update.notFound"));
             }
             InputStream in = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
             if (in == null) {
-                throw new IOException("服务器返回 HTTP " + code);
+                throw new IOException(Messages.tr("update.httpServer", code));
             }
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         } finally {
@@ -204,7 +205,7 @@ public class UpdateChecker {
         try {
             return URI.create(url).toURL();
         } catch (IllegalArgumentException e) {
-            throw new IOException("更新源地址无效：" + url);
+            throw new IOException(Messages.tr("update.invalidUrl", url));
         }
     }
 }

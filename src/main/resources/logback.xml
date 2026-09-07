@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  关机审计日志配置：
+  - 只把 “ShutdownAudit” 这个 logger 写入独立文件 ~/.desktop_utils/logs/shutdown.log；
+  - 行首时间精确到毫秒（%d{yyyy-MM-dd HH:mm:ss.SSS}），配合审计信息中的 epoch 毫秒使用；
+  - 按天滚动，最多保留 30 天；
+  - 其余 logger 一律静默（root = OFF），避免无关输出混入审计文件。
+-->
+<configuration>
+    <appender name="SHUTDOWN_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${user.home}/.desktop_utils/logs/shutdown.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${user.home}/.desktop_utils/logs/shutdown.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="ShutdownAudit" level="INFO" additivity="false">
+        <appender-ref ref="SHUTDOWN_FILE"/>
+    </logger>
+
+    <root level="OFF"/>
+</configuration>

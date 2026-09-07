@@ -9,6 +9,9 @@ public class AppSettings {
     public static final String DEFAULT_UPDATE_URL =
             "https://api.github.com/repos/Carnation-queen/desktop_utils/releases/latest";
 
+    /** 界面语言标识（system=跟随系统 / zh=简体中文 / en=English），默认跟随系统。 */
+    public static final String DEFAULT_LANGUAGE = "system";
+
     /** 是否开机自启动，默认关闭。 */
     private boolean autoStart = false;
 
@@ -17,6 +20,9 @@ public class AppSettings {
 
     /** 更新源地址。 */
     private String updateUrl = DEFAULT_UPDATE_URL;
+
+    /** 界面语言标识，默认跟随系统。 */
+    private String language = DEFAULT_LANGUAGE;
 
     public boolean isAutoStart() {
         return autoStart;
@@ -42,5 +48,13 @@ public class AppSettings {
         this.updateUrl = updateUrl == null || updateUrl.isBlank()
                 ? DEFAULT_UPDATE_URL
                 : updateUrl.trim();
+    }
+
+    public String getLanguage() {
+        return language == null || language.isBlank() ? DEFAULT_LANGUAGE : language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language == null || language.isBlank() ? DEFAULT_LANGUAGE : language;
     }
 }

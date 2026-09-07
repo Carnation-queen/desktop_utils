@@ -1,5 +1,6 @@
 package changcun.desktop_utils.service;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.ui.HolidayPanel;
 
 import javax.swing.JOptionPane;
@@ -21,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class HolidayReminder {
 
     private final HolidayStore store;
-    private final HolidayPanel panel;
+    private HolidayPanel panel;
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "holiday-reminder");
         t.setDaemon(false);
@@ -31,6 +32,13 @@ public class HolidayReminder {
     public HolidayReminder(HolidayStore store, HolidayPanel panel) {
         this.store = store;
         this.panel = panel;
+    }
+
+    /** 语言切换导致 HolidayPanel 被重建后，用新实例替换引用。 */
+    public void rebind(HolidayPanel newPanel) {
+        if (newPanel != null) {
+            this.panel = newPanel;
+        }
     }
 
     public void start() {
@@ -49,27 +57,28 @@ public class HolidayReminder {
             if (store.getJan1RemindedYear() != year) {
                 store.setJan1RemindedYear(year);
                 SwingUtilities.invokeLater(() ->
-                        prompt(year, "新的一年已开始，请重新导入 " + year + " 年的节假日信息。"));
+                        prompt(year, Messages.tr("reminder.jan1", year)));
             }
         } else if (today.getMonth() == Month.DECEMBER && today.getDayOfMonth() == 31) {
             if (store.getDec31RemindedYear() != year) {
                 store.setDec31RemindedYear(year);
                 int next = year + 1;
                 SwingUtilities.invokeLater(() ->
-                        prompt(next, "今年即将结束，请提前导入 " + next + " 年的节假日信息。"));
+                        prompt(next, Messages.tr("reminder.dec31", next)));
             }
         }
     }
 
     private void prompt(int targetYear, String message) {
+        String importNow = Messages.tr("reminder.importNow");
         int choice = JOptionPane.showOptionDialog(panel,
                 message,
-                "节假日导入提醒",
+                Messages.tr("reminder.title"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.INFORMATION_MESSAGE,
                 null,
-                new Object[]{"立即导入", "稍后"},
-                "立即导入");
+                new Object[]{importNow, Messages.tr("reminder.later")},
+                importNow);
         if (choice == JOptionPane.YES_OPTION) {
             panel.importFromExcel();
         }

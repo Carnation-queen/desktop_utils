@@ -1,5 +1,6 @@
 package changcun.desktop_utils.ui;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.service.AppSettingsStore;
 import changcun.desktop_utils.service.AutoStartManager;
 import changcun.desktop_utils.service.HolidayStore;
@@ -26,32 +27,92 @@ import java.awt.event.KeyEvent;
 public class MainFrame extends JFrame {
 
     private final HolidayStore holidayStore;
-    private final HolidayPanel holidayPanel;
-    private final SettingsPanel settingsPanel;
-    private final AboutPanel aboutPanel;
     private final NovelStore novelStore;
+    private final ShutdownScheduler scheduler;
+    private final AutoStartManager autoStartManager;
+    private final AppSettingsStore appSettingsStore;
+    private final UpdateChecker updateChecker;
+
+    private JTabbedPane tabs;
+    private HolidayPanel holidayPanel;
+    private SettingsPanel settingsPanel;
+    private AboutPanel aboutPanel;
+    private ShutdownPanel shutdownPanel;
+    private int lastTabIndex = 0;
+
     private NovelReaderFrame novelReader;
     private ShutdownLogFrame shutdownLog;
+
+    private Runnable onUiRebuilt = () -> {
+    };
 
     public MainFrame(ShutdownScheduler scheduler, HolidayStore holidayStore,
                      AutoStartManager autoStartManager, AppSettingsStore appSettingsStore,
                      UpdateChecker updateChecker, NovelStore novelStore) {
-        super("桌面工具");
+        super(Messages.tr("app.name"));
+        this.scheduler = scheduler;
+        this.holidayStore = holidayStore;
+        this.autoStartManager = autoStartManager;
+        this.appSettingsStore = appSettingsStore;
+        this.updateChecker = updateChecker;
+        this.novelStore = novelStore;
+
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setIconImage(AppIcon.windowIcon());
         setSize(1000, 750);
         setMinimumSize(new Dimension(800, 600));
         setLocationRelativeTo(null);
 
-        this.holidayStore = holidayStore;
-        this.holidayPanel = new HolidayPanel(holidayStore);
-        this.settingsPanel = new SettingsPanel(autoStartManager, appSettingsStore);
-        this.aboutPanel = new AboutPanel(updateChecker);
-        this.novelStore = novelStore;
-
-        setContentPane(buildContent(scheduler));
+        setContentPane(buildContent());
         installNovelReaderShortcut();
         installShutdownLogShortcut();
+        // 语言切换后重建整个界面，实现即时生效。
+        Messages.addListener(this::onLanguageChanged);
+    }
+
+    /**
+     * 设置界面重建完成后的回调（由 {@code Main} 使用，用于更新对面板的引用，
+     * 例如节假日提醒所持有的 {@link HolidayPanel} 实例）。
+     */
+    public void setOnUiRebuilt(Runnable callback) {
+        this.onUiRebuilt = callback != null ? callback : () -> {
+        };
+    }
+
+    /** 语言切换回调：重建所有面板与页签标题，并重建（丢弃）子窗口。 */
+    private void onLanguageChanged() {
+        int index = tabs != null ? tabs.getSelectedIndex() : lastTabIndex;
+        if (index < 0) {
+            index = 0;
+        }
+        disposeNovelReader();
+        disposeShutdownLog();
+        if (shutdownPanel != null) {
+            shutdownPanel.dispose();
+        }
+        lastTabIndex = index;
+        setTitle(Messages.tr("app.name"));
+        setContentPane(buildContent());
+        revalidate();
+        repaint();
+        onUiRebuilt.run();
+    }
+
+    /** 关闭小说阅读器子窗口（保存进度），下次呼出时以新语言重建。 */
+    private void disposeNovelReader() {
+        if (novelReader != null) {
+            novelReader.saveProgress();
+            novelReader.dispose();
+            novelReader = null;
+        }
+    }
+
+    /** 关闭关机日志子窗口，下次呼出时以新语言重建。 */
+    private void disposeShutdownLog() {
+        if (shutdownLog != null) {
+            shutdownLog.dispose();
+            shutdownLog = null;
+        }
     }
 
     /** 在主窗口内任意位置按下 Ctrl+Alt+Shift+F12 时唤起独立的小说阅读器窗口。 */
@@ -88,18 +149,23 @@ public class MainFrame extends JFrame {
         novelReader.open();
     }
 
-    private JPanel buildContent(ShutdownScheduler scheduler) {
+    private JPanel buildContent() {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(UiTheme.WINDOW_BG);
 
         root.add(buildHeader(), BorderLayout.NORTH);
 
-        JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("系统信息", new SystemInfoPanel());
-        tabs.addTab("定时关机", new ShutdownPanel(scheduler, holidayStore));
-        tabs.addTab("节假日", holidayPanel);
-        tabs.addTab("设置", settingsPanel);
-        tabs.addTab("关于", aboutPanel);
+        tabs = new JTabbedPane();
+        tabs.addTab(Messages.tr("main.tab.system"), new SystemInfoPanel());
+        shutdownPanel = new ShutdownPanel(scheduler, holidayStore);
+        tabs.addTab(Messages.tr("main.tab.shutdown"), shutdownPanel);
+        holidayPanel = new HolidayPanel(holidayStore);
+        tabs.addTab(Messages.tr("main.tab.holiday"), holidayPanel);
+        settingsPanel = new SettingsPanel(autoStartManager, appSettingsStore);
+        tabs.addTab(Messages.tr("main.tab.settings"), settingsPanel);
+        aboutPanel = new AboutPanel(updateChecker);
+        tabs.addTab(Messages.tr("main.tab.about"), aboutPanel);
+        tabs.setSelectedIndex(Math.min(Math.max(lastTabIndex, 0), tabs.getTabCount() - 1));
         root.add(tabs, BorderLayout.CENTER);
         return root;
     }
@@ -113,8 +179,8 @@ public class MainFrame extends JFrame {
         text.setOpaque(false);
         text.setLayout(new javax.swing.BoxLayout(text, javax.swing.BoxLayout.Y_AXIS));
 
-        JLabel title = UiTheme.title("桌面工具");
-        JLabel subtitle = UiTheme.subtitle("系统信息 · 定时关机 · 节假日 · 设置 · 关于 · 小说阅读器(Ctrl+Alt+Shift+F12)");
+        JLabel title = UiTheme.title(Messages.tr("app.name"));
+        JLabel subtitle = UiTheme.subtitle(Messages.tr("main.header.subtitle"));
         subtitle.setBorder(new EmptyBorder(4, 0, 0, 0));
 
         text.add(title);

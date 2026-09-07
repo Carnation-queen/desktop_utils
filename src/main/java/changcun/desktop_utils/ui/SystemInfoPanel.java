@@ -1,5 +1,7 @@
 package changcun.desktop_utils.ui;
 
+import changcun.desktop_utils.i18n.Messages;
+
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -23,12 +25,12 @@ public class SystemInfoPanel extends JPanel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
 
         String[][] rows = {
-                {"系统名称", System.getProperty("os.name", "未知")},
-                {"系统版本", System.getProperty("os.version", "未知")},
-                {"系统架构", System.getProperty("os.arch", "未知")},
-                {"Java 版本", System.getProperty("java.version", "未知")},
-                {"Java 厂商", System.getProperty("java.vendor", "未知")},
-                {"当前用户", System.getProperty("user.name", "未知")},
+                {Messages.tr("sysinfo.row.osName"), System.getProperty("os.name", Messages.tr("common.unknown"))},
+                {Messages.tr("sysinfo.row.osVersion"), System.getProperty("os.version", Messages.tr("common.unknown"))},
+                {Messages.tr("sysinfo.row.osArch"), System.getProperty("os.arch", Messages.tr("common.unknown"))},
+                {Messages.tr("sysinfo.row.javaVersion"), System.getProperty("java.version", Messages.tr("common.unknown"))},
+                {Messages.tr("sysinfo.row.javaVendor"), System.getProperty("java.vendor", Messages.tr("common.unknown"))},
+                {Messages.tr("sysinfo.row.userName"), System.getProperty("user.name", Messages.tr("common.unknown"))},
         };
 
         for (int i = 0; i < rows.length; i++) {
@@ -48,8 +50,8 @@ public class SystemInfoPanel extends JPanel {
         JPanel header = new JPanel();
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        header.add(UiTheme.title("系统信息"));
-        JLabel subtitle = UiTheme.subtitle("当前运行环境的基本信息");
+        header.add(UiTheme.title(Messages.tr("sysinfo.title")));
+        JLabel subtitle = UiTheme.subtitle(Messages.tr("sysinfo.subtitle"));
         subtitle.setBorder(new EmptyBorder(4, 0, 0, 0));
         header.add(subtitle);
         return header;

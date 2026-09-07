@@ -1,5 +1,6 @@
 package changcun.desktop_utils.service;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.model.NovelBook;
 import changcun.desktop_utils.model.NovelChapter;
 import changcun.desktop_utils.model.NovelLibrary;
@@ -118,12 +119,12 @@ public class NovelStore {
     /** 导入一个 TXT 小说文件到书库，返回新书目；标题为空时取文件名（去扩展名）。 */
     public synchronized NovelBook importBook(String title, Path sourceFile) throws IOException {
         if (sourceFile == null || !Files.isRegularFile(sourceFile)) {
-            throw new IOException("导入失败：文件不存在。");
+            throw new IOException(Messages.tr("novel.import.fileMissing"));
         }
         byte[] data = Files.readAllBytes(sourceFile);
         String content = decodeContent(data);
         if (content.isBlank()) {
-            throw new IOException("导入失败：文件内容为空。");
+            throw new IOException(Messages.tr("novel.import.emptyContent"));
         }
 
         NovelBook book = new NovelBook();
@@ -183,7 +184,7 @@ public class NovelStore {
     public String readContent(NovelBook book) throws IOException {
         Path file = contentFile(book);
         if (!Files.exists(file)) {
-            throw new IOException("内容文件缺失：" + book.getTitle());
+            throw new IOException(Messages.tr("novel.fileMissing", book.getTitle()));
         }
         return decodeContent(Files.readAllBytes(file));
     }

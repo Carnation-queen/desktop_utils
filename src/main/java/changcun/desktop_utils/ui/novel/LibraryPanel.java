@@ -1,5 +1,6 @@
 package changcun.desktop_utils.ui.novel;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.model.NovelBook;
 import changcun.desktop_utils.service.NovelStore;
 import changcun.desktop_utils.ui.UiTheme;
@@ -53,7 +54,10 @@ public class LibraryPanel extends JPanel {
 
         add(buildHeader(), BorderLayout.NORTH);
 
-        tableModel = new DefaultTableModel(new Object[]{"书名", "进度", "最后阅读"}, 0) {
+        tableModel = new DefaultTableModel(new Object[]{
+                Messages.tr("novel.col.title"),
+                Messages.tr("novel.col.progress"),
+                Messages.tr("novel.col.lastRead")}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -85,19 +89,19 @@ public class LibraryPanel extends JPanel {
         JPanel text = new JPanel();
         text.setOpaque(false);
         text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
-        text.add(UiTheme.title("小说书库"));
-        JLabel subtitle = UiTheme.subtitle("导入 TXT 小说，阅读进度自动保存，下次打开自动续读");
+        text.add(UiTheme.title(Messages.tr("novel.library.title")));
+        JLabel subtitle = UiTheme.subtitle(Messages.tr("novel.library.subtitle"));
         subtitle.setBorder(new EmptyBorder(4, 0, 0, 0));
         text.add(subtitle);
         header.add(text, BorderLayout.WEST);
 
-        JButton importButton = UiTheme.primaryButton("导入 TXT 小说");
+        JButton importButton = UiTheme.primaryButton(Messages.tr("novel.import"));
         importButton.addActionListener(e -> importBooks());
-        JButton openButton = UiTheme.secondaryButton("打开阅读");
+        JButton openButton = UiTheme.secondaryButton(Messages.tr("novel.open"));
         openButton.addActionListener(e -> openSelected());
-        JButton renameButton = UiTheme.secondaryButton("重命名");
+        JButton renameButton = UiTheme.secondaryButton(Messages.tr("novel.rename"));
         renameButton.addActionListener(e -> renameSelected());
-        JButton deleteButton = UiTheme.secondaryButton("删除");
+        JButton deleteButton = UiTheme.secondaryButton(Messages.tr("novel.delete"));
         deleteButton.addActionListener(e -> deleteSelected());
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -137,8 +141,8 @@ public class LibraryPanel extends JPanel {
             tableModel.addRow(new Object[]{book.getTitle(), progressText(book), timeText(book.getUpdatedAt())});
         }
         infoLabel.setText(books.isEmpty()
-                ? "书库为空，点击右上角「导入 TXT 小说」开始收藏你的第一本书。"
-                : String.format("共 %d 本小说 · 双击书名或选中后点击「打开阅读」即可续读", books.size()));
+                ? Messages.tr("novel.library.empty")
+                : Messages.tr("novel.library.count", books.size()));
     }
 
     private NovelBook selectedBook() {
@@ -148,9 +152,9 @@ public class LibraryPanel extends JPanel {
 
     private void importBooks() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("选择要导入的小说（可多选）");
+        chooser.setDialogTitle(Messages.tr("novel.import.chooserTitle"));
         chooser.setMultiSelectionEnabled(true);
-        chooser.setFileFilter(new FileNameExtensionFilter("文本小说 (*.txt)", "txt"));
+        chooser.setFileFilter(new FileNameExtensionFilter(Messages.tr("novel.import.filter"), "txt"));
         if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
         }
@@ -169,12 +173,12 @@ public class LibraryPanel extends JPanel {
         refresh();
         if (failed > 0) {
             JOptionPane.showMessageDialog(this,
-                    "以下文件导入失败：\n" + error,
-                    "导入结果", JOptionPane.WARNING_MESSAGE);
+                    Messages.tr("novel.import.partialFail", error.toString().stripTrailing()),
+                    Messages.tr("novel.import.resultTitle"), JOptionPane.WARNING_MESSAGE);
         } else if (imported > 0) {
             JOptionPane.showMessageDialog(this,
-                    String.format("成功导入 %d 本小说。", imported),
-                    "导入成功", JOptionPane.INFORMATION_MESSAGE);
+                    Messages.tr("novel.import.success", imported),
+                    Messages.tr("novel.import.successTitle"), JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
@@ -190,7 +194,9 @@ public class LibraryPanel extends JPanel {
         if (book == null) {
             return;
         }
-        String title = JOptionPane.showInputDialog(this, "输入新的书名：", "重命名", JOptionPane.PLAIN_MESSAGE);
+        String title = JOptionPane.showInputDialog(this,
+                Messages.tr("novel.rename.prompt"),
+                Messages.tr("novel.rename.title"), JOptionPane.PLAIN_MESSAGE);
         if (title != null && !title.isBlank()) {
             store.renameBook(book.getId(), title);
             refresh();
@@ -203,8 +209,8 @@ public class LibraryPanel extends JPanel {
             return;
         }
         int choice = JOptionPane.showConfirmDialog(this,
-                String.format("确定删除《%s》？\n其导入的内容文件将被一并移除，且不可恢复。", book.getTitle()),
-                "删除确认", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                Messages.tr("novel.delete.confirm", book.getTitle()),
+                Messages.tr("novel.delete.title"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (choice == JOptionPane.YES_OPTION) {
             store.deleteBook(book.getId());
             refresh();

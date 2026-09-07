@@ -1,5 +1,6 @@
 package changcun.desktop_utils.ui;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.model.AppSettings;
 import changcun.desktop_utils.service.AppSettingsStore;
 import changcun.desktop_utils.service.AutoStartManager;
@@ -8,6 +9,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -15,6 +17,7 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 
 /**
@@ -25,14 +28,20 @@ public class SettingsPanel extends JPanel {
     private static final Color SUCCESS_GREEN = new Color(0x16A34A);
     private static final Color ERROR_RED = new Color(0xDC2626);
 
+    /** 可选语言：跟随系统 / 简体中文 / English。 */
+    private static final String[] LANGUAGE_CODES = {
+            Messages.LANG_SYSTEM, Messages.LANG_ZH, Messages.LANG_EN
+    };
+
     private final AutoStartManager autoStartManager;
     private final AppSettingsStore appSettingsStore;
-    private final JCheckBox autoStartCheck = new JCheckBox("开机自启动");
-    private final JCheckBox autoUpdateCheck = new JCheckBox("自动检查更新");
+    private final JCheckBox autoStartCheck = new JCheckBox(Messages.tr("settings.autoStart"));
+    private final JCheckBox autoUpdateCheck = new JCheckBox(Messages.tr("settings.autoUpdate"));
     private final JTextField updateUrlField = new JTextField();
-    private final JButton saveUrlButton = UiTheme.secondaryButton("保存更新源");
+    private final JButton saveUrlButton = UiTheme.secondaryButton(Messages.tr("settings.updateUrl.save"));
     private final JLabel statusLabel = new JLabel();
     private final JLabel updateStatusLabel = new JLabel();
+    private JComboBox<String> languageCombo;
     private boolean applying = false;
 
     public SettingsPanel(AutoStartManager autoStartManager, AppSettingsStore appSettingsStore) {
@@ -49,6 +58,8 @@ public class SettingsPanel extends JPanel {
         content.setOpaque(false);
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.add(buildGeneralCard());
+        content.add(Box.createVerticalStrut(16));
+        content.add(buildLanguageCard());
         content.add(Box.createVerticalStrut(16));
         content.add(buildUpdateCard());
         add(content, BorderLayout.CENTER);
@@ -77,8 +88,8 @@ public class SettingsPanel extends JPanel {
         JPanel header = new JPanel();
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        header.add(UiTheme.title("设置"));
-        JLabel subtitle = UiTheme.subtitle("程序的常规偏好设置，修改后自动保存");
+        header.add(UiTheme.title(Messages.tr("settings.title")));
+        JLabel subtitle = UiTheme.subtitle(Messages.tr("settings.subtitle"));
         subtitle.setBorder(new EmptyBorder(4, 0, 0, 0));
         header.add(subtitle);
         return header;
@@ -88,7 +99,7 @@ public class SettingsPanel extends JPanel {
         JPanel card = UiTheme.card();
         card.setLayout(new BorderLayout(0, 14));
 
-        card.add(UiTheme.sectionTitle("常规设置"), BorderLayout.NORTH);
+        card.add(UiTheme.sectionTitle(Messages.tr("settings.general.section")), BorderLayout.NORTH);
 
         JPanel body = new JPanel();
         body.setOpaque(false);
@@ -97,7 +108,7 @@ public class SettingsPanel extends JPanel {
 
         body.add(autoStartCheck);
 
-        JLabel desc = UiTheme.subtitle("程序随系统启动后自动运行并常驻后台（默认关闭）");
+        JLabel desc = UiTheme.subtitle(Messages.tr("settings.autoStart.desc"));
         desc.setBorder(new EmptyBorder(4, 0, 0, 0));
         body.add(desc);
 
@@ -109,11 +120,87 @@ public class SettingsPanel extends JPanel {
         return card;
     }
 
+    /** 语言卡片：下拉选择界面语言，切换后立即生效。 */
+    private JPanel buildLanguageCard() {
+        JPanel card = UiTheme.card();
+        card.setLayout(new BorderLayout(0, 14));
+
+        card.add(UiTheme.sectionTitle(Messages.tr("settings.language.section")), BorderLayout.NORTH);
+
+        JPanel body = new JPanel();
+        body.setOpaque(false);
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setBorder(new EmptyBorder(10, 0, 4, 0));
+
+        JLabel label = UiTheme.subtitle(Messages.tr("settings.language.label"));
+        label.setFont(label.getFont().deriveFont(Font.BOLD, 13f));
+        label.setForeground(UiTheme.TEXT_PRIMARY);
+        body.add(label);
+
+        JLabel desc = UiTheme.subtitle(Messages.tr("settings.language.desc"));
+        desc.setBorder(new EmptyBorder(4, 0, 10, 0));
+        body.add(desc);
+
+        languageCombo = new JComboBox<>();
+        languageCombo.setFont(languageCombo.getFont().deriveFont(Font.PLAIN, 13f));
+        for (String code : LANGUAGE_CODES) {
+            languageCombo.addItem(labelFor(code));
+        }
+        languageCombo.setSelectedIndex(indexOfCode(appSettingsStore.load().getLanguage()));
+        languageCombo.setAlignmentX(0.0f);
+        languageCombo.setMaximumSize(new Dimension(360, 30));
+        // 先完成默认选中再绑定监听，避免重建时触发语言切换。
+        languageCombo.addActionListener(e -> applyLanguageSelection());
+        body.add(languageCombo);
+
+        card.add(body, BorderLayout.CENTER);
+        return card;
+    }
+
+    /** 语言下拉选择：保存设置并触发全局界面重建。 */
+    private void applyLanguageSelection() {
+        if (languageCombo == null) {
+            return;
+        }
+        int index = languageCombo.getSelectedIndex();
+        String code = index >= 0 && index < LANGUAGE_CODES.length
+                ? LANGUAGE_CODES[index]
+                : Messages.LANG_SYSTEM;
+        AppSettings settings = appSettingsStore.load();
+        if (code.equals(settings.getLanguage())) {
+            return;
+        }
+        settings.setLanguage(code);
+        appSettingsStore.save(settings);
+        // 触发 Messages 监听器：重建主窗口及各子窗口，实现即时生效。
+        Messages.setLanguage(code);
+    }
+
+    private static String labelFor(String code) {
+        switch (code) {
+            case Messages.LANG_ZH:
+                return Messages.tr("lang.zh");
+            case Messages.LANG_EN:
+                return Messages.tr("lang.en");
+            default:
+                return Messages.tr("lang.system");
+        }
+    }
+
+    private static int indexOfCode(String code) {
+        for (int i = 0; i < LANGUAGE_CODES.length; i++) {
+            if (LANGUAGE_CODES[i].equals(code)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
     private JPanel buildUpdateCard() {
         JPanel card = UiTheme.card();
         card.setLayout(new BorderLayout(0, 14));
 
-        card.add(UiTheme.sectionTitle("更新设置"), BorderLayout.NORTH);
+        card.add(UiTheme.sectionTitle(Messages.tr("settings.update.section")), BorderLayout.NORTH);
 
         JPanel body = new JPanel();
         body.setOpaque(false);
@@ -122,11 +209,11 @@ public class SettingsPanel extends JPanel {
 
         body.add(autoUpdateCheck);
 
-        JLabel autoDesc = UiTheme.subtitle("程序启动时自动在后台检查是否有新版本（默认开启）");
+        JLabel autoDesc = UiTheme.subtitle(Messages.tr("settings.autoUpdate.desc"));
         autoDesc.setBorder(new EmptyBorder(4, 0, 8, 0));
         body.add(autoDesc);
 
-        JLabel urlLabel = UiTheme.subtitle("更新源地址（GitHub Releases 接口）");
+        JLabel urlLabel = UiTheme.subtitle(Messages.tr("settings.updateUrl.label"));
         body.add(urlLabel);
 
         JPanel urlRow = new JPanel(new BorderLayout(8, 0));
@@ -154,10 +241,10 @@ public class SettingsPanel extends JPanel {
             boolean ok = autoStartManager.setEnabled(enabled);
             if (!ok) {
                 JOptionPane.showMessageDialog(this,
-                        enabled
-                                ? "开机自启动设置失败。\n请确认系统支持该功能，或尝试以管理员身份运行后重试。"
-                                : "取消开机自启动失败，请稍后重试。",
-                        "提示",
+                        Messages.tr(enabled
+                                ? "settings.autoStart.failEnable"
+                                : "settings.autoStart.failDisable"),
+                        Messages.tr("common.hint"),
                         JOptionPane.WARNING_MESSAGE);
                 // 回滚开关到持久化的实际状态
                 autoStartCheck.setSelected(!enabled);
@@ -170,13 +257,13 @@ public class SettingsPanel extends JPanel {
 
     private void refreshStatus() {
         if (!autoStartManager.isSupported()) {
-            statusLabel.setText("当前系统暂不支持开机自启动");
+            statusLabel.setText(Messages.tr("settings.autoStart.unsupported"));
             statusLabel.setForeground(UiTheme.TEXT_SECONDARY);
         } else if (autoStartManager.isEnabled()) {
-            statusLabel.setText("已开启：程序将随系统启动自动运行");
+            statusLabel.setText(Messages.tr("settings.autoStart.enabled"));
             statusLabel.setForeground(SUCCESS_GREEN);
         } else {
-            statusLabel.setText("已关闭：程序不会随系统自动启动");
+            statusLabel.setText(Messages.tr("settings.autoStart.disabled"));
             statusLabel.setForeground(UiTheme.TEXT_SECONDARY);
         }
     }
@@ -192,7 +279,7 @@ public class SettingsPanel extends JPanel {
         String url = updateUrlField.getText() == null ? "" : updateUrlField.getText().trim();
         if (url.isEmpty()) {
             updateStatusLabel.setForeground(ERROR_RED);
-            updateStatusLabel.setText("更新源地址不能为空");
+            updateStatusLabel.setText(Messages.tr("settings.updateUrl.errEmpty"));
             updateUrlField.setText(AppSettings.DEFAULT_UPDATE_URL);
             return;
         }
@@ -201,16 +288,16 @@ public class SettingsPanel extends JPanel {
         appSettingsStore.save(settings);
         updateUrlField.setText(settings.getUpdateUrl());
         updateStatusLabel.setForeground(SUCCESS_GREEN);
-        updateStatusLabel.setText("更新源已保存");
+        updateStatusLabel.setText(Messages.tr("settings.updateUrl.saved"));
     }
 
     private void refreshUpdateStatus() {
         AppSettings settings = appSettingsStore.load();
         if (settings.isAutoUpdate()) {
-            updateStatusLabel.setText("已开启：启动时自动检查更新");
+            updateStatusLabel.setText(Messages.tr("settings.update.status.on"));
             updateStatusLabel.setForeground(SUCCESS_GREEN);
         } else {
-            updateStatusLabel.setText("已关闭：需手动点击“检查更新”");
+            updateStatusLabel.setText(Messages.tr("settings.update.status.off"));
             updateStatusLabel.setForeground(UiTheme.TEXT_SECONDARY);
         }
     }

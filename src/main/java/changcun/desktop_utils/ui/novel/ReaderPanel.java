@@ -1,5 +1,6 @@
 package changcun.desktop_utils.ui.novel;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.model.NovelBook;
 import changcun.desktop_utils.model.NovelChapter;
 import changcun.desktop_utils.service.NovelStore;
@@ -57,9 +58,9 @@ public class ReaderPanel extends JPanel {
     private final JSlider progressSlider = new JSlider(0, 1000);
     private final DefaultListModel<NovelChapter> tocModel = new DefaultListModel<>();
     private final JList<NovelChapter> tocList = new JList<>(tocModel);
-    private final JButton prevButton = UiTheme.secondaryButton("‹ 上一页");
-    private final JButton nextButton = UiTheme.secondaryButton("下一页 ›");
-    private final JButton tocButton = UiTheme.secondaryButton("目录");
+    private final JButton prevButton = UiTheme.secondaryButton(Messages.tr("novel.prev"));
+    private final JButton nextButton = UiTheme.secondaryButton(Messages.tr("novel.next"));
+    private final JButton tocButton = UiTheme.secondaryButton(Messages.tr("novel.toc"));
     private final JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
     private final JPanel tocWrap = new JPanel(new BorderLayout());
     private final Timer saveTimer;
@@ -94,8 +95,9 @@ public class ReaderPanel extends JPanel {
         try {
             content = store.readContent(target);
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "打开失败：" + ex.getMessage(),
-                    "提示", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    Messages.tr("novel.openFailed", ex.getMessage()),
+                    Messages.tr("common.hint"), JOptionPane.ERROR_MESSAGE);
             book = null;
             return;
         }
@@ -154,7 +156,7 @@ public class ReaderPanel extends JPanel {
                 new EmptyBorder(10, 14, 10, 14),
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UiTheme.DIVIDER)));
 
-        JButton back = UiTheme.secondaryButton("← 返回书库");
+        JButton back = UiTheme.secondaryButton(Messages.tr("novel.back"));
         back.addActionListener(e -> backAction.run());
 
         titleLabel.setForeground(UiTheme.TEXT_PRIMARY);
@@ -166,10 +168,10 @@ public class ReaderPanel extends JPanel {
         west.add(titleLabel);
 
         JButton fontMinus = UiTheme.secondaryButton("A−");
-        fontMinus.setToolTipText("减小字号");
+        fontMinus.setToolTipText(Messages.tr("novel.fontSmall"));
         fontMinus.addActionListener(e -> adjustFontSize(-1));
         JButton fontPlus = UiTheme.secondaryButton("A＋");
-        fontPlus.setToolTipText("增大字号");
+        fontPlus.setToolTipText(Messages.tr("novel.fontLarge"));
         fontPlus.addActionListener(e -> adjustFontSize(1));
         tocButton.addActionListener(e -> toggleToc());
 
@@ -204,7 +206,7 @@ public class ReaderPanel extends JPanel {
             }
         });
 
-        JLabel tocTitle = UiTheme.sectionTitle("章节目录");
+        JLabel tocTitle = UiTheme.sectionTitle(Messages.tr("novel.tocTitle"));
         tocTitle.setBorder(new EmptyBorder(10, 12, 6, 12));
         JScrollPane tocScroll = new JScrollPane(tocList);
         tocScroll.setBorder(BorderFactory.createEmptyBorder());
@@ -233,7 +235,7 @@ public class ReaderPanel extends JPanel {
         statusLabel.setForeground(UiTheme.TEXT_SECONDARY);
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 13f));
 
-        progressSlider.setToolTipText("拖动可快速跳转阅读进度");
+        progressSlider.setToolTipText(Messages.tr("novel.sliderTooltip"));
         progressSlider.addChangeListener(e -> {
             if (!updatingSlider && !progressSlider.getValueIsAdjusting()) {
                 jumpToPercent();
@@ -387,7 +389,8 @@ public class ReaderPanel extends JPanel {
         int length = content.length();
         double percent = length == 0 ? 0.0 : offset * 100.0 / length;
         String chapter = currentChapterText(offset);
-        statusLabel.setText(String.format("%s · 已读 %.1f%%", chapter, percent));
+        String percentText = String.format(java.util.Locale.ROOT, "%.1f%%", percent);
+        statusLabel.setText(Messages.tr("novel.readStatus", chapter, percentText));
 
         prevButton.setEnabled(offset > 0);
         nextButton.setEnabled(!textPanel.isAtEnd());
@@ -399,14 +402,14 @@ public class ReaderPanel extends JPanel {
 
     private String currentChapterText(int offset) {
         if (chapters.isEmpty()) {
-            return "阅读中";
+            return Messages.tr("novel.reading");
         }
         for (int i = chapters.size() - 1; i >= 0; i--) {
             if (chapters.get(i).getStartOffset() <= offset) {
                 return chapters.get(i).getTitle();
             }
         }
-        return "开始";
+        return Messages.tr("novel.begin");
     }
 
     // ---------------------------------------------------------------------

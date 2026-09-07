@@ -1,5 +1,6 @@
 package changcun.desktop_utils.ui;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.model.ShutdownConfig;
 import changcun.desktop_utils.service.HolidayStore;
 import changcun.desktop_utils.service.ShutdownScheduler;
@@ -39,15 +40,16 @@ public class ShutdownPanel extends JPanel {
     private final ShutdownScheduler scheduler;
     private final HolidayStore holidayStore;
 
-    private final JRadioButton noneRadio = new JRadioButton("关闭定时关机");
-    private final JRadioButton onceRadio = new JRadioButton("一次性关机");
-    private final JRadioButton dailyRadio = new JRadioButton("每天关机");
-    private final JRadioButton workdayRadio = new JRadioButton("非节假日关机");
+    private final JRadioButton noneRadio = new JRadioButton(Messages.tr("shutdown.mode.none"));
+    private final JRadioButton onceRadio = new JRadioButton(Messages.tr("shutdown.mode.once"));
+    private final JRadioButton dailyRadio = new JRadioButton(Messages.tr("shutdown.mode.daily"));
+    private final JRadioButton workdayRadio = new JRadioButton(Messages.tr("shutdown.mode.workday"));
 
     private final JSpinner dateTimeSpinner;
     private final JSpinner timeSpinner;
     private final JSpinner workdayTimeSpinner;
     private final JLabel statusLabel = new JLabel();
+    private final Timer refreshTimer;
 
     public ShutdownPanel(ShutdownScheduler scheduler, HolidayStore holidayStore) {
         this.scheduler = scheduler;
@@ -101,16 +103,23 @@ public class ShutdownPanel extends JPanel {
         syncFromConfig();
 
         // 每秒刷新一次状态提示（剩余时间等）
-        Timer timer = new Timer(1000, e -> updateStatus());
-        timer.start();
+        refreshTimer = new Timer(1000, e -> updateStatus());
+        refreshTimer.start();
+    }
+
+    /** 停止状态刷新定时器（界面被语言切换重建时调用，避免残留后台定时器）。 */
+    public void dispose() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+        }
     }
 
     private JPanel buildHeader() {
         JPanel header = new JPanel();
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        header.add(UiTheme.title("定时关机"));
-        JLabel subtitle = UiTheme.subtitle("到达设定时间后自动关闭计算机，可随时修改或取消");
+        header.add(UiTheme.title(Messages.tr("shutdown.title")));
+        JLabel subtitle = UiTheme.subtitle(Messages.tr("shutdown.subtitle"));
         subtitle.setBorder(new EmptyBorder(4, 0, 0, 0));
         header.add(subtitle);
         return header;
@@ -130,7 +139,7 @@ public class ShutdownPanel extends JPanel {
         JPanel card = UiTheme.card();
         card.setLayout(new BorderLayout(0, 14));
 
-        JLabel section = UiTheme.sectionTitle("关机设置");
+        JLabel section = UiTheme.sectionTitle(Messages.tr("shutdown.section"));
         card.add(section, BorderLayout.NORTH);
 
         JPanel form = new JPanel(new GridBagLayout());
@@ -179,10 +188,10 @@ public class ShutdownPanel extends JPanel {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         row.setOpaque(false);
 
-        JButton applyButton = UiTheme.primaryButton("应用设置");
+        JButton applyButton = UiTheme.primaryButton(Messages.tr("shutdown.apply"));
         applyButton.addActionListener(e -> apply());
 
-        JButton cancelButton = UiTheme.secondaryButton("取消定时关机");
+        JButton cancelButton = UiTheme.secondaryButton(Messages.tr("shutdown.cancel"));
         cancelButton.addActionListener(e -> cancel());
 
         row.add(applyButton);
@@ -238,8 +247,8 @@ public class ShutdownPanel extends JPanel {
             long millis = ((Date) dateTimeSpinner.getValue()).getTime();
             if (millis <= System.currentTimeMillis()) {
                 JOptionPane.showMessageDialog(this,
-                        "关机时间必须晚于当前时间。",
-                        "提示",
+                        Messages.tr("shutdown.err.timeInPast"),
+                        Messages.tr("common.hint"),
                         JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -255,8 +264,8 @@ public class ShutdownPanel extends JPanel {
         } else if (workdayRadio.isSelected()) {
             if (holidayStore.load().size() == 0) {
                 int choice = JOptionPane.showConfirmDialog(this,
-                        "当前还没有导入节假日信息，非节假日模式将把每天都视为工作日。\n是否仍然启用？",
-                        "提示",
+                        Messages.tr("shutdown.confirm.noHoliday"),
+                        Messages.tr("common.hint"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE);
                 if (choice != JOptionPane.YES_OPTION) {
@@ -290,7 +299,7 @@ public class ShutdownPanel extends JPanel {
         long next = scheduler.nextTriggerMillis(now);
 
         if (c.getMode() == ShutdownConfig.Mode.NONE || next <= 0) {
-            statusLabel.setText("当前状态：未设置定时关机");
+            statusLabel.setText(Messages.tr("shutdown.status.none"));
             return;
         }
 
@@ -301,18 +310,18 @@ public class ShutdownPanel extends JPanel {
         String remainText = formatDuration(remain);
 
         if (c.getMode() == ShutdownConfig.Mode.DAILY) {
-            statusLabel.setText(String.format(
-                    "<html>当前状态：每天 %02d:%02d 自动关机<br>下一次：%s（剩余 %s）</html>",
-                    c.getDailyHour(), c.getDailyMinute(), when, remainText));
+            statusLabel.setText(Messages.tr("shutdown.status.daily",
+                    two(c.getDailyHour()), two(c.getDailyMinute()), when, remainText));
         } else if (c.getMode() == ShutdownConfig.Mode.WORKDAY) {
-            statusLabel.setText(String.format(
-                    "<html>当前状态：非节假日每天 %02d:%02d 自动关机<br>下一次：%s（剩余 %s）</html>",
-                    c.getWorkdayHour(), c.getWorkdayMinute(), when, remainText));
+            statusLabel.setText(Messages.tr("shutdown.status.workday",
+                    two(c.getWorkdayHour()), two(c.getWorkdayMinute()), when, remainText));
         } else {
-            statusLabel.setText(String.format(
-                    "<html>当前状态：将在 %s 自动关机（剩余 %s）</html>",
-                    when, remainText));
+            statusLabel.setText(Messages.tr("shutdown.status.once", when, remainText));
         }
+    }
+
+    private static String two(int value) {
+        return String.format("%02d", value);
     }
 
     private static String formatDuration(long millis) {
@@ -323,14 +332,14 @@ public class ShutdownPanel extends JPanel {
         long seconds = totalSeconds % 60;
 
         if (days > 0) {
-            return String.format("%d 天 %d 小时 %d 分钟", days, hours, minutes);
+            return Messages.tr("shutdown.dur.dhm", days, hours, minutes);
         }
         if (hours > 0) {
-            return String.format("%d 小时 %d 分钟 %d 秒", hours, minutes, seconds);
+            return Messages.tr("shutdown.dur.hms", hours, minutes, seconds);
         }
         if (minutes > 0) {
-            return String.format("%d 分钟 %d 秒", minutes, seconds);
+            return Messages.tr("shutdown.dur.ms", minutes, seconds);
         }
-        return String.format("%d 秒", seconds);
+        return Messages.tr("shutdown.dur.s", seconds);
     }
 }

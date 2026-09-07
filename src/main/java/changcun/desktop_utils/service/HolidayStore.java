@@ -1,5 +1,6 @@
 package changcun.desktop_utils.service;
 
+import changcun.desktop_utils.i18n.Messages;
 import changcun.desktop_utils.model.HolidayData;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -133,7 +134,7 @@ public class HolidayStore {
         try (Workbook wb = WorkbookFactory.create(Files.newInputStream(excelFile))) {
             Sheet sheet = wb.getSheetAt(0);
             if (sheet == null) {
-                throw new IOException("Excel 中没有工作表。");
+                throw new IOException(Messages.tr("holiday.err.noSheet"));
             }
             for (Row row : sheet) {
                 if (row == null) {
@@ -148,12 +149,11 @@ public class HolidayStore {
         } catch (IOException e) {
             throw e;
         } catch (Exception e) {
-            throw new IOException("读取 Excel 失败：" + e.getMessage(), e);
+            throw new IOException(Messages.tr("holiday.err.readExcel", e.getMessage()), e);
         }
 
         if (data.size() == 0) {
-            throw new IOException("未在 Excel 第一个工作表的首列解析到任何日期。\n"
-                    + "请确保首列为日期（支持 yyyy-MM-dd、yyyy/M/d 等常见格式）。");
+            throw new IOException(Messages.tr("holiday.err.noDates"));
         }
         data.setYear(dominantYear(data.getDates()));
         return data;
