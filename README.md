@@ -1,16 +1,17 @@
 # Desktop Utils
 
-A lightweight cross-platform Swing desktop utility that runs quietly in the system tray and provides seven core features:
+A lightweight cross-platform Swing desktop utility that runs quietly in the system tray and provides eight core features:
 
 - **System Info** — displays basic information about the current runtime environment.
 - **Scheduled Shutdown** — shuts the computer down automatically on a one-time, daily, or workday-only schedule.
 - **Holiday Management** — imports annual holiday data from Excel and uses it to skip shutdowns on holidays.
-- **Settings** — toggles auto-start on login and update preferences.
+- **Settings** — manages auto-start on login, update preferences, and the interface language.
 - **Software Update** — checks for new releases and downloads the update.
 - **Novel Reader** — an offline TXT novel library with progress-saving paginated reading.
 - **Shutdown Audit Log** — a hidden record of when/how the scheduler fired (visible via **F12** only).
+- **Interface Language** — a bilingual (Chinese & English) UI, switchable live from Settings.
 
-> The UI language is Chinese.
+> The UI is bilingual. By default it follows the OS language (Chinese OS → Chinese, anything else → English); you can switch between **跟随系统 / 简体中文 / English (Follow System / Simplified Chinese / English)** anytime in **Settings → Interface Language** — no restart required.
 
 ## Features
 
@@ -46,23 +47,28 @@ The scheduler checks every second in the background and executes a full shutdown
 
 - Closing the main window minimizes the app to the system tray instead of exiting.
 - The tray icon supports **double-click to show the main window** and a right-click menu with *Show Main Window* and *Exit*.
-- **Auto-start on login** (Windows only) is registered under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. On startup the registered command is refreshed so it always points to the current location of the application.
+- **Auto-start on login** is supported cross-platform:
+  - **Windows** — a Run entry under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`;
+  - **macOS** — a LaunchAgent under `~/Library/LaunchAgents/`;
+  - **Linux** — a `.desktop` file under `~/.config/autostart/`.
+  On startup the registered command is refreshed so it always points to the current location of the application.
+- The **Settings** page additionally lets you toggle *auto-check for updates* on startup, edit the *update source URL*, and pick the *interface language* (see [Interface Language (i18n)](#8-interface-language-i18n)).
 
 ### 5. Software Update
 
-- The **About (关于)** tab shows the current version and a *检查更新* button.
-- Update checking reads the latest GitHub Release from the repository's releases API (configurable under **Settings → 更新设置**).
-- When a newer version is found, the app shows the release notes and a *下载更新* button; the downloaded installer/asset can be opened right away.
+- The **About** tab shows the current version and a *Check for Updates* button.
+- Update checking reads the latest GitHub Release from the repository's releases API (configurable under **Settings → Updates**).
+- When a newer version is found, the app shows the release notes and a *Download Update* button; the downloaded installer/asset can be opened right away.
 - **Auto-check on startup** is enabled by default and can be toggled in Settings.
 
-To ship updates, publish a GitHub Release with a tag such as `v1.0.2` and attach the installer (e.g. `desktop_utils-1.0.2.exe`) as a release asset. The app compares the tag version against the version baked into the build (`version.properties`, sourced from `pom.xml`).
+To ship updates, publish a GitHub Release with a tag such as `v1.0.4` and attach the installer (e.g. `desktop_utils-1.0.4.exe`) as a release asset. The app compares the tag version against the version baked into the build (`version.properties`, sourced from `pom.xml`).
 
 ### 6. Novel Reader（小说阅读器）
 
 - Press **Ctrl+Alt+Shift+F12** anywhere inside the main window to open a standalone **Novel Reader** window (independent of the main frame).
 - **Library (书库)**: import one or more `.txt` files, view the book list with reading progress and last-read time; supports **open / rename / delete**, and double-click a book to start (or resume) reading.
 - **Reading**: paginated text display with previous/next page buttons, plus keyboard support (`Space` / `PageDown` / `→` next, `PageUp` / `←` previous, mouse wheel flips pages). Font size can be adjusted with `A−` / `A＋`.
-- **Chapter navigation**: common chapter headings (第X章/节/回…、楔子、序章、番外、后记…) are auto-detected into a clickable **目录** (table of contents); a progress slider and a chapter indicator are shown in the footer.
+- **Chapter navigation**: common chapter headings (第X章/节/回…、楔子、序章、番外、后记…) are auto-detected into a clickable **Contents (目录)**; a progress slider and a chapter indicator are shown in the footer.
 - **Progress memory**: the reading position (character offset) is saved automatically on every page turn and when the window closes; reopening the same book resumes at exactly the same spot.
 - Text files are copied into `~/.desktop_utils/novels/books/` and decoded adaptively (UTF-8, UTF-16 or GB18030/GBK), so the library stays self-contained after import.
 
@@ -77,9 +83,19 @@ To ship updates, publish a GitHub Release with a tag such as `v1.0.2` and attach
   - each **actually fired** shutdown, with mode, the originally scheduled instant and the real trigger instant;
   - one-shot tasks that were **missed** and auto-cancelled.
 - **Millisecond precision**: every line starts with a `yyyy-MM-dd HH:mm:ss.SSS` timestamp, and trigger events also embed the raw epoch-millisecond values.
-- Implemented with **SLF4J + Logback** (rolling file, 30-day history). While the Shutdown Log window is focused, pressing F12 (or ESC) hides it again; the window provides **刷新** and **清空日志**.
+- Implemented with **SLF4J + Logback** (rolling file, 30-day history). While the Shutdown Log window is focused, pressing F12 (or ESC) hides it again; the window provides **Refresh (刷新)** and **Clear Log (清空日志)** buttons.
 
 > Tip: the audit file is a plain text file under the user home directory — treat it as developer/maintenance information, not as a security boundary.
+
+### 8. Interface Language (i18n)
+
+- The UI ships with **Chinese** and **English**; the default is **Follow System** (a Chinese OS shows Chinese, anything else shows English).
+- Switch it live in **Settings → Interface Language** — the whole UI (panels, tabs, dialogs, tray menu, novel reader and log window) rebuilds immediately, no restart needed.
+- The selection is persisted in `app.properties` under the `app.language` key (`system` / `zh` / `en`).
+- All strings are centralized in UTF-8 resource bundles under `src/main/resources/i18n/`:
+  - `messages.properties` — Chinese (also the fallback bundle);
+  - `messages_en.properties` — English (falls back to Chinese for any missing key).
+- Strings are resolved through `changcun.desktop_utils.i18n.Messages` (`Messages.tr("key", args…)`). To add a language, create a `messages_<lang>.properties` with the same key set and map it in `Messages.resolveLocale(...)`; the `MessagesTest` unit test keeps the Chinese and English key sets in sync.
 
 ## Requirements
 
@@ -96,13 +112,13 @@ mvn clean package
 The Maven Shade plugin produces a self-contained executable JAR:
 
 ```
-target/desktop_utils-1.0-SNAPSHOT.jar
+target/desktop_utils-1.0.4.jar
 ```
 
 ## Run
 
 ```bash
-java -jar target/desktop_utils-1.0-SNAPSHOT.jar
+java -jar target/desktop_utils-1.0.4.jar
 ```
 
 ## Packaging (Windows Installer)
@@ -117,9 +133,9 @@ The Windows installer is built with **jpackage** (bundled with JDK 17+). On Wind
 mvn clean package
 ```
 
-The output is written to `target/desktop_utils-<version>.jar` (e.g. `target/desktop_utils-1.0.2.jar`).
+The output is written to `target/desktop_utils-<version>.jar` (e.g. `target/desktop_utils-1.0.4.jar`).
 
-> ⚠️ Do **not** feed jpackage the IntelliJ artifact JAR (`out/artifacts/desktop_utils_jar/desktop_utils.jar`): it is a thin JAR whose dependencies are missing or incomplete. Packaging from it produced a build that crashed on “检查更新” with `NoClassDefFoundError: com/google/gson/JsonParser` because Gson was absent from the runtime classpath.
+> ⚠️ Do **not** feed jpackage the IntelliJ artifact JAR (`out/artifacts/desktop_utils_jar/desktop_utils.jar`): it is a thin JAR whose dependencies are missing or incomplete. Packaging from it produced a build that crashed when checking for updates with `NoClassDefFoundError: com/google/gson/JsonParser` because Gson was absent from the runtime classpath.
 
 ### 2. Configure WiX 3.x (one-time setup)
 
@@ -147,14 +163,15 @@ Run the command from the project root (so that `LICENSE.txt` resolves):
 ```powershell
 jpackage --name desktop_utils `
   --input "target" `
-  --main-jar desktop_utils-1.0.2.jar `
+  --main-jar desktop_utils-1.0.4.jar `
   --main-class changcun.desktop_utils.Main `
   --dest "installer" `
   --license-file "LICENSE.txt" `
   --icon "icon.ico" `
   --win-dir-chooser `
   --win-shortcut-prompt `
-  --win-menu
+  --win-menu `
+  --app-version "1.0.4"
 ```
 
 Key options:
@@ -166,7 +183,7 @@ Key options:
 | `--win-menu`           | Add the app to the Windows Start Menu.                             |
 | `--license-file`       | Embed `LICENSE.txt` as the installer license (must be `.txt`).     |
 
-On success, the installer is written to `installer/desktop_utils-1.0.exe`.
+On success, the installer is written to `installer/desktop_utils-1.0.4.exe`.
 
 > To use the multi-resolution `icon.ico` for the installer/executable, add `--icon icon.ico` (the file is provided in the project root).
 
@@ -174,30 +191,37 @@ On success, the installer is written to `installer/desktop_utils-1.0.exe`.
 
 All state is stored under `~/.desktop_utils/`:
 
-| File                    | Purpose                                    |
-| ----------------------- | ------------------------------------------ |
-| `config.properties`   | Scheduled shutdown settings.               |
-| `holidays.properties` | Imported holiday dates and reminder state. |
-| `app.properties`      | General settings (auto-start toggle).      |
+| File / Folder         | Purpose                                                     |
+| --------------------- | ----------------------------------------------------------- |
+| `config.properties`   | Scheduled shutdown settings.                                |
+| `holidays.properties` | Imported holiday dates and reminder state.                  |
+| `app.properties`      | General settings: auto-start, auto-update, update source URL, interface language. |
+| `novels/`             | Novel reader library (`library.json` + `books/*.txt`).      |
+| `logs/shutdown.log`   | Shutdown audit log (rolling, 30-day history).               |
 
 ## Project Structure
 
 ```
 src/main/java/changcun/desktop_utils/
 ├── Main.java              # Application entry point
-├── model/                 # Data models (ShutdownConfig, HolidayData, AppSettings)
-├── service/               # Business logic (scheduler, stores, auto-start, shutdown)
+├── i18n/                  # Internationalization: Messages loader + message keys
+├── model/                 # Data models (ShutdownConfig, HolidayData, AppSettings, novel…)
+├── service/               # Business logic (scheduler, stores, auto-start, update checker, audit log)
 ├── tray/                  # System tray management
-└── ui/                    # Swing UI panels and theming
-src/main/resources/        # Runtime resources (application icon)
+└── ui/                    # Swing UI panels, theming, and ui/novel reader views
+src/main/resources/        # Runtime resources: icon, logback.xml, i18n/*.properties
+src/test/java/             # JUnit 5 tests (models, stores, scheduler, update checker, i18n)
 ```
 
 ## Technology Stack
 
 - **Java 17**
 - **Swing** with [FlatLaf](https://www.formdev.com/flatlaf/) (modern look & feel)
-- **Apache POI** for Excel import
-- **Maven Shade Plugin** for packaging
+- **Apache POI** for Excel import (holidays)
+- **Gson** for parsing the GitHub Releases update API
+- **SLF4J + Logback** for the shutdown audit log
+- **Maven Shade Plugin** for packaging a self-contained JAR
+- **JUnit 5** for unit tests
 
 ## Icons
 
