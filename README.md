@@ -1,6 +1,6 @@
 # Desktop Utils
 
-A lightweight cross-platform Swing desktop utility that runs quietly in the system tray and provides six core features:
+A lightweight cross-platform Swing desktop utility that runs quietly in the system tray and provides seven core features:
 
 - **System Info** — displays basic information about the current runtime environment.
 - **Scheduled Shutdown** — shuts the computer down automatically on a one-time, daily, or workday-only schedule.
@@ -8,6 +8,7 @@ A lightweight cross-platform Swing desktop utility that runs quietly in the syst
 - **Settings** — toggles auto-start on login and update preferences.
 - **Software Update** — checks for new releases and downloads the update.
 - **Novel Reader** — an offline TXT novel library with progress-saving paginated reading.
+- **Shutdown Audit Log** — a hidden record of when/how the scheduler fired (visible via **F12** only).
 
 > The UI language is Chinese.
 
@@ -66,6 +67,19 @@ To ship updates, publish a GitHub Release with a tag such as `v1.0.2` and attach
 - Text files are copied into `~/.desktop_utils/novels/books/` and decoded adaptively (UTF-8, UTF-16 or GB18030/GBK), so the library stays self-contained after import.
 
 > Tip: pressing Ctrl+Alt+Shift+F12 again while the Novel Reader is focused hides it (progress is saved); calling it from the main window brings it back to the last view.
+
+### 7. Shutdown Audit Log（关机日志）
+
+- **Hidden entry**: press **F12** anywhere inside the main window to open a standalone **Shutdown Log** window. There is **no** public menu/button/tab for it — only F12 reveals it.
+- Records an **audit trail** of scheduler activity into `~/.desktop_utils/logs/shutdown.log`:
+  - program startup / exit (with app version, OS and Java version);
+  - scheduler start/stop and every config change (set / cancel);
+  - each **actually fired** shutdown, with mode, the originally scheduled instant and the real trigger instant;
+  - one-shot tasks that were **missed** and auto-cancelled.
+- **Millisecond precision**: every line starts with a `yyyy-MM-dd HH:mm:ss.SSS` timestamp, and trigger events also embed the raw epoch-millisecond values.
+- Implemented with **SLF4J + Logback** (rolling file, 30-day history). While the Shutdown Log window is focused, pressing F12 (or ESC) hides it again; the window provides **刷新** and **清空日志**.
+
+> Tip: the audit file is a plain text file under the user home directory — treat it as developer/maintenance information, not as a security boundary.
 
 ## Requirements
 

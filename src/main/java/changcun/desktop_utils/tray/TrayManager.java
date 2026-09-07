@@ -1,5 +1,6 @@
 package changcun.desktop_utils.tray;
 
+import changcun.desktop_utils.service.ShutdownAudit;
 import changcun.desktop_utils.service.ShutdownScheduler;
 import changcun.desktop_utils.ui.AppIcon;
 import changcun.desktop_utils.ui.MainFrame;
@@ -110,6 +111,7 @@ public class TrayManager {
      * 完全退出：停止调度、移除托盘图标、销毁窗口并结束整个 JVM。
      */
     public void exitApplication() {
+        ShutdownAudit.exit("托盘菜单退出");
         scheduler.stop();
         if (trayIcon != null) {
             SystemTray.getSystemTray().remove(trayIcon);

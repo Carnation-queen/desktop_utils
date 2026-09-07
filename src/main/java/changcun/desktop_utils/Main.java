@@ -2,11 +2,13 @@ package changcun.desktop_utils;
 
 import changcun.desktop_utils.model.ShutdownConfig;
 import changcun.desktop_utils.service.AppSettingsStore;
+import changcun.desktop_utils.service.AppVersion;
 import changcun.desktop_utils.service.AutoStartManager;
 import changcun.desktop_utils.service.HolidayReminder;
 import changcun.desktop_utils.service.HolidayStore;
 import changcun.desktop_utils.service.NovelStore;
 import changcun.desktop_utils.service.SettingsStore;
+import changcun.desktop_utils.service.ShutdownAudit;
 import changcun.desktop_utils.service.ShutdownScheduler;
 import changcun.desktop_utils.service.UpdateChecker;
 import changcun.desktop_utils.tray.TrayManager;
@@ -27,6 +29,9 @@ import java.awt.event.WindowEvent;
 public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
+            ShutdownAudit.startup(AppVersion.current(),
+                    System.getProperty("os.name", "未知"),
+                    System.getProperty("java.version", "未知"));
             UiTheme.applyGlobalFont();
             try {
                 FlatLightLaf.setup();

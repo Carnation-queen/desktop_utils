@@ -37,6 +37,18 @@
             <version>2.10.1</version>
         </dependency>
 
+        <!-- 关机审计日志：SLF4J API + Logback 实现，记录到 ~/.desktop_utils/logs/ -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.16</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.18</version>
+        </dependency>
+
         <!-- 单元测试 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

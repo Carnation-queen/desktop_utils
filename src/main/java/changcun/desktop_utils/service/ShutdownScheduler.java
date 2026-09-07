@@ -51,11 +51,13 @@ public class ShutdownScheduler {
         this.config = newConfig.copy();
         this.fired = false;
         store.save(this.config);
+        ShutdownAudit.configUpdated(this.config);
         notifyListeners();
     }
 
     /** 取消所有定时关机。 */
     public synchronized void cancel() {
+        ShutdownAudit.configCancelled(getConfig());
         updateConfig(new ShutdownConfig());
     }
 
@@ -65,10 +67,12 @@ public class ShutdownScheduler {
     }
 
     public void start() {
+        ShutdownAudit.schedulerStarted(getConfig());
         executor.scheduleAtFixedRate(this::check, 1, 1, TimeUnit.SECONDS);
     }
 
     public void stop() {
+        ShutdownAudit.schedulerStopped();
         executor.shutdownNow();
     }
 
@@ -80,11 +84,14 @@ public class ShutdownScheduler {
             case ONCE:
                 if (c.getOnceEpochMillis() > 0) {
                     if (isWithinTriggerWindow(now, c.getOnceEpochMillis())) {
+                        // 先落审计日志再发关机命令，确保关机瞬间日志已写盘。
+                        ShutdownAudit.triggered(ShutdownConfig.Mode.ONCE, c.getOnceEpochMillis(), now);
                         OsShutdown.shutdownNow();
                         // 一次性任务完成后自动关闭，避免重启程序后重复关机。
                         disableOnce();
                     } else if (now >= c.getOnceEpochMillis() + TRIGGER_GRACE_MILLIS) {
                         // 已错过关机时间：自动取消，避免重启程序后误关机。
+                        ShutdownAudit.missedOnce(c.getOnceEpochMillis(), now);
                         disableOnce();
                     }
                 }
@@ -94,6 +101,7 @@ public class ShutdownScheduler {
                 if (isWithinTriggerWindow(now, today)) {
                     if (!fired) {
                         fired = true;
+                        ShutdownAudit.triggered(ShutdownConfig.Mode.DAILY, today, now);
                         OsShutdown.shutdownNow();
                     }
                 } else {
@@ -108,6 +116,7 @@ public class ShutdownScheduler {
                 if (isWithinTriggerWindow(now, today) && !isHoliday(todayDate)) {
                     if (!fired) {
                         fired = true;
+                        ShutdownAudit.triggered(ShutdownConfig.Mode.WORKDAY, today, now);
                         OsShutdown.shutdownNow();
                     }
                 } else {

@@ -31,6 +31,7 @@ public class MainFrame extends JFrame {
     private final AboutPanel aboutPanel;
     private final NovelStore novelStore;
     private NovelReaderFrame novelReader;
+    private ShutdownLogFrame shutdownLog;
 
     public MainFrame(ShutdownScheduler scheduler, HolidayStore holidayStore,
                      AutoStartManager autoStartManager, AppSettingsStore appSettingsStore,
@@ -50,6 +51,7 @@ public class MainFrame extends JFrame {
 
         setContentPane(buildContent(scheduler));
         installNovelReaderShortcut();
+        installShutdownLogShortcut();
     }
 
     /** 在主窗口内任意位置按下 Ctrl+Alt+Shift+F12 时唤起独立的小说阅读器窗口。 */
@@ -58,6 +60,24 @@ public class MainFrame extends JFrame {
                 InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK);
         getRootPane().registerKeyboardAction(e -> openNovelReader(), key,
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
+    }
+
+    /**
+     * 隐藏入口：在主窗口内任意位置按下单独的 F12，唤起独立的关机审计日志窗口。
+     * 该日志不提供任何公开菜单/按钮入口，仅在界面内按 F12 可查看。
+     */
+    private void installShutdownLogShortcut() {
+        KeyStroke key = KeyStroke.getKeyStroke(KeyEvent.VK_F12, 0);
+        getRootPane().registerKeyboardAction(e -> openShutdownLog(), key,
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
+    }
+
+    /** 打开（或唤起）关机审计日志窗口。 */
+    public void openShutdownLog() {
+        if (shutdownLog == null) {
+            shutdownLog = new ShutdownLogFrame();
+        }
+        shutdownLog.open();
     }
 
     /** 打开（或唤起）小说阅读器窗口。 */
