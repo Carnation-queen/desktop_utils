@@ -15,6 +15,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -39,6 +40,7 @@ public class MainFrame extends JFrame {
     private AboutPanel aboutPanel;
     private ShutdownPanel shutdownPanel;
     private int lastTabIndex = 0;
+    private boolean rebuildQueued = false;
 
     private NovelReaderFrame novelReader;
     private ShutdownLogFrame shutdownLog;
@@ -79,23 +81,42 @@ public class MainFrame extends JFrame {
         };
     }
 
-    /** 语言切换回调：重建所有面板与页签标题，并重建（丢弃）子窗口。 */
+    /**
+     * 语言切换回调。不在触发切换的 AWT 事件（下拉框选中/弹层关闭）处理过程中同步拆除并
+     * 重建整个窗口——那样会让窗口重建与下拉弹层/事件派发竞争，导致主窗口停留在旧界面或
+     * 失去响应。改为把重建延后到当前事件处理完成之后，并合并连续多次切换。
+     */
     private void onLanguageChanged() {
-        int index = tabs != null ? tabs.getSelectedIndex() : lastTabIndex;
-        if (index < 0) {
-            index = 0;
+        if (rebuildQueued) {
+            return;
         }
-        disposeNovelReader();
-        disposeShutdownLog();
-        if (shutdownPanel != null) {
-            shutdownPanel.dispose();
+        rebuildQueued = true;
+        SwingUtilities.invokeLater(this::rebuildForLanguage);
+    }
+
+    /** 延后执行的整体重建：重建所有面板与页签标题，并重建（丢弃）子窗口。 */
+    private void rebuildForLanguage() {
+        rebuildQueued = false;
+        try {
+            int index = tabs != null ? tabs.getSelectedIndex() : lastTabIndex;
+            if (index < 0) {
+                index = 0;
+            }
+            disposeNovelReader();
+            disposeShutdownLog();
+            if (shutdownPanel != null) {
+                shutdownPanel.dispose();
+            }
+            lastTabIndex = index;
+            setTitle(Messages.tr("app.name"));
+            setContentPane(buildContent());
+            revalidate();
+            repaint();
+            onUiRebuilt.run();
+        } catch (Throwable t) {
+            // 重建失败也打印出来，避免主窗口停留在旧界面且无任何提示。
+            t.printStackTrace();
         }
-        lastTabIndex = index;
-        setTitle(Messages.tr("app.name"));
-        setContentPane(buildContent());
-        revalidate();
-        repaint();
-        onUiRebuilt.run();
     }
 
     /** 关闭小说阅读器子窗口（保存进度），下次呼出时以新语言重建。 */
